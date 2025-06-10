@@ -370,3 +370,35 @@ export const taylorAtanh = (x) => {
   return 0.5 * computeLn((1 + x) / (1 - x));
 };
 
+export function dmsToDecimal(dmsString) {
+  const parts = dmsString
+    .split('°')
+    .map(p => p.trim())
+    .filter(p => p !== '');
+
+  if (parts.length === 0 || parts.length > 3) {
+    throw new Error("Invalid DMS format: too many components");
+  }
+
+  // Validate that all parts are numeric
+  for (const part of parts) {
+    if (isNaN(part)) {
+      throw new Error("Invalid DMS format: all components must be numeric");
+    }
+  }
+
+  const [deg = 0, min = 0, sec = 0] = parts.map(Number);
+
+  // Ensure correct order: degrees is first, minutes second, etc.
+  if (deg === undefined || min < 0 || sec < 0) {
+    throw new Error("Invalid DMS format");
+  }
+
+  // Additional range validation (optional):
+  if (min >= 60 || sec >= 60) {
+    throw new Error("Minutes and seconds must be less than 60");
+  }
+
+  const decimal = deg + min / 60 + sec / 3600;
+  return parseFloat(decimal.toFixed(6));
+}

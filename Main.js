@@ -4,7 +4,7 @@ import HyperbolicMenu from "./HyperbolicMenu";
 import { factorial , PI,E,abs,sqrt, div_mul, divide, cbrt, square, cube, x_yrt,
   makeNegative, computeLog10, computeLn,computeLogBase, 
   computeSummation,taylorSin,taylorTan,taylorCos,taylorAsin,taylorAcos,taylorAtan,
-taylorSinh,taylorCosh,taylorTanh,taylorAsinh,taylorAcosh,taylorAtanh} from "./Screens/AllLogics";
+taylorSinh,taylorCosh,taylorTanh,taylorAsinh,taylorAcosh,taylorAtanh,dmsToDecimal} from "./Screens/AllLogics";
 
 
 function Main({navigation,ActualMode,setActualMode,route}){
@@ -672,7 +672,7 @@ expr = expr.replace(/∑\(([^,]+),([^,]+),([^,]+),([^)]+)\)/g, 'computeSummation
   // Inverse hyperbolic functions
   expr = expr.replace(/sinh⁻¹\(/g, 'taylorAsinh(');
   expr = expr.replace(/cosh⁻¹\(/g, 'taylorAcosh(');
-  expr = expr.replace(/tanh⁻¹\(/g, 'taylorAtanh(');
+  expr = expr.replace(/tanh⁻¹\(/g, 'taylorAtanh(');   
 
  
   try {
@@ -680,12 +680,12 @@ expr = expr.replace(/∑\(([^,]+),([^,]+),([^,]+),([^)]+)\)/g, 'computeSummation
       'PI', 'E', 'factorial','abs','sqrt','divide','div_mul','cbrt','square','cube','power',
       'makeNegative','computeLog10','computeLn','computeLogBase',
       'computeSummation','taylorSin','taylorCos','taylorTan',
-      'taylorAsin','taylorAcos','taylorAtan','taylorSinh','taylorCosh','taylorTanh','taylorAsinh','taylorAcosh','taylorAtanh',
-      `return ${expr};`
+      'taylorAsin','taylorAcos','taylorAtan','taylorSinh','taylorCosh','taylorTanh','taylorAsinh','taylorAcosh','taylorAtanh','dmsToDecimal',
+     `return ${expr};`
     );
 
     const result = evalInScope(PI, E, factorial,abs,sqrt,divide,div_mul,cbrt,square,cube,x_yrt,makeNegative,computeLog10,computeLn,computeLogBase,computeSummation,taylorSin,taylorCos,
-      taylorTan,taylorAsin,taylorAcos,taylorAtan,taylorSinh,taylorCosh,taylorTanh,taylorAsinh,taylorAcosh,taylorAtanh
+      taylorTan,taylorAsin,taylorAcos,taylorAtan,taylorSinh,taylorCosh,taylorTanh,taylorAsinh,taylorAcosh,taylorAtanh,dmsToDecimal
     );
     return result;
   } catch (error) {
