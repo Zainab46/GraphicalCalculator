@@ -8,8 +8,9 @@ import HyperbolicMenu from './HyperbolicMenu';
 import StatMenu from './Screens/SimpleMode/Stat';
 import EquationMenu from './Screens/SimpleMode/EQN';
 import VectorMenu from './Screens/SimpleMode/Vector';
-import ConversionsMenu from './Screens/Conversions';
-import ConstantsMenu from './Screens/Constants';
+import Shiftseven from './Screens/Shiftseven';
+import Shifteight from './Screens/Shifteight';
+
 const Stack= createStackNavigator();
 
 
@@ -184,8 +185,8 @@ return(
             }} 
           />
           <Stack.Screen 
-            name="Conversions" 
-            component={ConversionsMenu}
+            name="Shifteight" 
+            component={Shifteight}
             options={{
               headerShown: true,
               headerTitle: 'MODE',
@@ -204,8 +205,8 @@ return(
           />
         
          <Stack.Screen 
-            name="Constants" 
-            component={ConstantsMenu}
+            name="Shiftseven" 
+            component={Shiftseven}
             options={{
               headerShown: true,
               headerTitle: 'MODE',

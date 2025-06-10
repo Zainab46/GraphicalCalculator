@@ -1,6 +1,11 @@
 import React, {useState, useEffect, useRef} from "react";
 import { View, SafeAreaView, TextInput, StyleSheet, TouchableOpacity, Text, Image} from "react-native";
 import HyperbolicMenu from "./HyperbolicMenu";
+import { factorial , PI,E,abs,sqrt, div_mul, divide, cbrt, square, cube, x_yrt,
+  makeNegative, computeLog10, computeLn,computeLogBase, 
+  computeSummation,taylorSin,taylorTan,taylorCos,taylorAsin,taylorAcos,taylorAtan,
+taylorSinh,taylorCosh,taylorTanh,taylorAsinh,taylorAcosh,taylorAtanh} from "./Screens/AllLogics";
+
 
 function Main({navigation,ActualMode,setActualMode,route}){
   
@@ -20,6 +25,20 @@ function Main({navigation,ActualMode,setActualMode,route}){
   const[BaseStartPosition,setBaseStartPosition]=useState(null);
   const[ExponentStartPosition,setExponentStartPosition]=useState(null);
   let hypitems= route?.params?.hypvalues??null;
+  const [lastresult,setLastResult]=useState(null);
+
+
+
+// Special tokens that should be deleted as a whole
+  const specialTokens = [
+    'sin(□)', 'cos(□)', 'tan(□)', 'hyp(□)', 'log(□)', 'Ln(□)', 
+    'sin⁻¹(□)', 'cos⁻¹(□)', 'tan⁻¹(□)', 'sinh(□)', 'cosh(□)', 'tanh(□)','□^□','□!','□/□','□*(□/□)','log□(□)','□√□',
+    '√□','∛□','□²','□³','10^□','e^□','|□|'
+
+
+
+  ];
+
 
 const DRGHandling=()=>{
   if(DRG==='DEG'){
@@ -86,11 +105,11 @@ const HandleNumberClick=(number)=>{
   }
  
 else if(shift===true && number==='7'){
-    navigation.navigate('Constants')
+    navigation.navigate('Shiftseven')
   }
 
 else if(shift===true && number==='8'){
-    navigation.navigate('Conversions')
+    navigation.navigate('Shifteight')
   }
 
 else{
@@ -110,7 +129,7 @@ else{
                          expressionInput.substring(currentPos);
     
     setExpressionInput(newExpression);
-   setFirstPlaceholderPosition(currentPos);
+    setFirstPlaceholderPosition(currentPos);
     setFunctionType('reciprocal');
     setCursorPosition(currentPos + 1); // Position cursor after box
     }
@@ -122,17 +141,40 @@ else{
     setExpressionInput(newExpression);
      setFirstPlaceholderPosition(currentPos);
     setFunctionType('factorial');
-    setCursorPosition(currentPos + 1); // Position cursor after box
+    setCursorPosition(currentPos - 2); // Position cursor after box
     }
   };
 
+
+const handleSummation = (expr) => {
+  const sumRegex = /∑\((\w+),\s*(-?\d+),\s*(-?\d+),\s*([^)]+)\)/;
+
+  const match = expr.match(sumRegex);
+  if (!match) return null;
+
+  const [, variable, start, end, innerExpr] = match;
+
+  let total = 0;
+  for (let i = parseInt(start); i <= parseInt(end); i++) {
+    // Replace all instances of the variable with the value in parentheses to preserve order
+    const replaced = innerExpr.replace( new RegExp(`\\b${variable}\\b`,'g'),`(${i})` );
+    const val = evaluateExpression(replaced);
+    if (val === 'Error') return 'Error';
+    total += parseFloat(val);
+  }
+
+  return total;
+};
+
   // handle log₂y clicks
+
+  
 const handleLog2y = () => {
   if(shift===false){
 
   
   const currentPos = cursorPosition !== null ? cursorPosition : expressionInput.length;
-  const newExpression = expressionInput.substring(0, currentPos) + "log₂(□)" + 
+  const newExpression = expressionInput.substring(0, currentPos) + "log□(□)" + 
                        expressionInput.substring(currentPos);
   
   setExpressionInput(newExpression);
@@ -140,16 +182,17 @@ const handleLog2y = () => {
   setFunctionType('log2');
   setCursorPosition(currentPos + 6); // Position cursor after box
   }
-  else if(shift===true){
+  else if(shift===true&& ActualMode==='COMP'){
      
   const currentPos = cursorPosition !== null ? cursorPosition : expressionInput.length;
-  const newExpression = expressionInput.substring(0, currentPos) + "∑□" + 
+  const newExpression = expressionInput.substring(0, currentPos) + "∑(x,□,□,□)" + 
                        expressionInput.substring(currentPos);
   
   setExpressionInput(newExpression);
-  setFirstPlaceholderPosition(currentPos + 1);
-  setFunctionType('log2');
-  setCursorPosition(currentPos + 2); // Position cursor after box 
+  setFirstPlaceholderPosition(currentPos + 4);
+setSecondPlaceholderPosition(currentPos+2)
+setThirdPlaceholderPosition(currentPos+2)
+  setCursorPosition(currentPos + 1); // Position cursor after box 
   }
 };
 
@@ -461,11 +504,6 @@ else if(shift === true && variable === 'm' && alpha===false){
 }
 }
 
-
-
-
-
-
 // Function to handle operator clicks
   const handleOperatorClick = (operator) => {
     setExpressionInput(expressionInput + operator);
@@ -498,11 +536,182 @@ if(hypitems!==null&&shift==false){
 
 }
 
+  // Find if the expression ends with a special token
+  const findSpecialToken = (expression) => {
+    for (const token of specialTokens) {
+      if (expression.endsWith(token)) {
+        return token;
+      }
+    }
+    return null;
+  };
+
+    // Enhanced backspace function
+  const handleBackspace = () => {
+    if (expressionInput.length > 0) {
+      const currentPos = cursorPosition !== null ? cursorPosition : expressionInput.length;
+      
+      if (currentPos > 0) {
+        // Check if we're deleting a special token
+        const token = findSpecialToken(expressionInput.substring(0, currentPos));
+        
+        if (token) {
+          // Delete entire token
+          const newExpression = expressionInput.substring(0, currentPos - token.length) + 
+                               expressionInput.substring(currentPos);
+          setExpressionInput(newExpression);
+          setCursorPosition(currentPos - token.length);
+        } else {
+          // Delete single character at cursor position
+          const newExpression = expressionInput.substring(0, currentPos - 1) + 
+                               expressionInput.substring(currentPos);
+          setExpressionInput(newExpression);
+          setCursorPosition(currentPos - 1);
+        }
+      }
+    }
+  };
+
 
 const HandleClear=()=>{
   setExpressionInput('');
   setResult('');
 }
+
+const handleAns=()=>{
+if(lastresult){
+  setExpressionInput(expressionInput+lastresult)
+
+}
+}
+const evaluateExpression = (expr) => {
+
+   if (expr.includes('∑(')) {
+    const result = handleSummation(expr);
+    if (result !== null) return result;
+  }
+
+  // Replace operators for JavaScript evaluation
+  expr = expr.replace(/X/g, '*');
+  expr = expr.replace(/÷/g, '/');
+  expr = expr.replace(/\^/g, '**');
+
+  // Handle factorial e.g., 5! => factorial(5)
+  expr = expr.replace(/(\d+|\([^()]*\))\s*!/g, 'factorial($1)');
+
+  // Handle x⁻¹ => 1/x or (expr)⁻¹ => 1/(expr)
+  expr = expr.replace(/(\d+|\([^()]*\))⁻¹/g, '(1/($1))');
+
+  // Handle division e.g., a / b => divide(a, b)
+expr = expr.replace(/(\w+|\([^()]*\))\s*\/\s*(\w+|\([^()]*\))/g, 'divide($1, $2)');
+
+// Handle expressions like x*(y/z) => multiply(x, divide(y, z))
+expr = expr.replace(/(\w+)\s*\*\s*\(\s*(\w+)\s*\/\s*(\w+)\s*\)/g, 'multiply($1, divide($2, $3))');
+
+ // Handle special functions
+  expr = expr.replace(/√(\d+|\([^()]*\))/g, 'sqrt($1)');
+
+  //handle cube root
+  expr = expr.replace(/∛\s*(\w+|\([^()]*\))/g, 'cbrt($1)');
+
+ // Handle x² 
+expr = expr.replace(/(\w+|\([^()]*\))²/g, 'square($1)');
+
+// Handle x³
+expr = expr.replace(/(\w+|\([^()]*\))³/g, 'cube($1)');
+
+//x^y
+expr = expr.replace(/(\w+|\([^()]*\))\s*\^\s*(\w+|\([^()]*\))/g, 'power($1, $2)');
+
+//x√y
+expr = expr.replace(/(\w+|\([^()]*\))\s*√\s*(\w+|\([^()]*\))/g, 'x_yrt($2, $1)');
+
+//-
+expr = expr.replace(/-\s*(\w+|\([^()]*\))/g, 'makeNegative($1)');
+
+//log
+expr = expr.replace(/log\(([^)]+)\)/g, 'computeLog10($1)');
+
+//Ln
+expr = expr.replace(/Ln\(([^)]+)\)/g, 'computeLn($1)');
+
+//logbase2
+expr = expr.replace(/log(\d+)\(([^)]+)\)/g, 'computeLogBase($2, $1)');
+
+//summation
+expr = expr.replace(/∑\(([^,]+),([^,]+),([^,]+),([^)]+)\)/g, 'computeSummation($1, $2, $3, $4)');
+
+
+
+  // Convert angles based on DRG mode for trigonometric functions
+  if (DRG !== 'RAD') {
+    expr = expr.replace(/taylorSin\(([^)]+)\)/g, `taylorSin(convertAngleToRadians($1, '${DRG}'))`);
+    expr = expr.replace(/taylorCos\(([^)]+)\)/g, `taylorCos(convertAngleToRadians($1, '${DRG}'))`);
+    expr = expr.replace(/taylorTan\(([^)]+)\)/g, `taylorTan(convertAngleToRadians($1, '${DRG}'))`);
+    expr = expr.replace(/taylorAsin\(([^)]+)\)/g, `convertRadiansToAngle(taylorAsin($1), '${DRG}')`);
+    expr = expr.replace(/taylorAcos\(([^)]+)\)/g, `convertRadiansToAngle(taylorAcos($1), '${DRG}')`);
+    expr = expr.replace(/taylorAtan\(([^)]+)\)/g, `convertRadiansToAngle(taylorAtan($1), '${DRG}')`);
+  }
+
+  // Original trig function replacements
+  expr = expr.replace(/sin\(/g, 'taylorSin(');
+  expr = expr.replace(/cos\(/g, 'taylorCos(');
+  expr = expr.replace(/tan\(/g, 'taylorTan(');
+  
+
+  // Inverse trig functions
+  expr = expr.replace(/sin⁻¹\(/g, 'taylorAsin(');
+  expr = expr.replace(/cos⁻¹\(/g, 'taylorAcos(');
+  expr = expr.replace(/tan⁻¹\(/g, 'taylorAtan(');
+
+  // Hyperbolic functions
+  expr = expr.replace(/sinh\(/g, 'taylorSinh(');
+  expr = expr.replace(/cosh\(/g, 'taylorCosh(');
+  expr = expr.replace(/tanh\(/g, 'taylorTanh(');
+
+  // Inverse hyperbolic functions
+  expr = expr.replace(/sinh⁻¹\(/g, 'taylorAsinh(');
+  expr = expr.replace(/cosh⁻¹\(/g, 'taylorAcosh(');
+  expr = expr.replace(/tanh⁻¹\(/g, 'taylorAtanh(');
+
+ 
+  try {
+    const evalInScope = new Function(
+      'PI', 'E', 'factorial','abs','sqrt','divide','div_mul','cbrt','square','cube','power',
+      'makeNegative','computeLog10','computeLn','computeLogBase',
+      'computeSummation','taylorSin','taylorCos','taylorTan',
+      'taylorAsin','taylorAcos','taylorAtan','taylorSinh','taylorCosh','taylorTanh','taylorAsinh','taylorAcosh','taylorAtanh',
+      `return ${expr};`
+    );
+
+    const result = evalInScope(PI, E, factorial,abs,sqrt,divide,div_mul,cbrt,square,cube,x_yrt,makeNegative,computeLog10,computeLn,computeLogBase,computeSummation,taylorSin,taylorCos,
+      taylorTan,taylorAsin,taylorAcos,taylorAtan,taylorSinh,taylorCosh,taylorTanh,taylorAsinh,taylorAcosh,taylorAtanh
+    );
+    return result;
+  } catch (error) {
+    console.error("Evaluation error:", error);
+    return "Error";
+  }
+};
+
+
+  // Function to handle equals button
+ // Modify your handleEquals to handle the x^y special case
+ const handleEquals = () => {
+  try {
+    // Normal equation evaluation
+    if (expressionInput) {
+      const result = evaluateExpression(expressionInput);
+      setResult(result.toString());
+      setLastResult(result.toString());
+    }
+  } catch (error) {
+    console.error("Calculation error:", error);
+    setResult('Error');
+  }
+};
+
+
 return (
 
 <SafeAreaView style={ss.mainView}>
@@ -516,8 +725,7 @@ return (
     if (inputRef.current && cursorPosition !== null) {                         //cursor ko dkhta ha cursor kdr ha
       inputRef.current.setNativeProps({
         selection: { start: cursorPosition, end: cursorPosition }
-      });
-    }
+      });    }
   } }
   value={expressionInput}  
   editable={true}  
@@ -716,15 +924,15 @@ return (
         </View>
 
         <View>
-          <Text style={{color:'white', marginLeft:10}}>FACT  b</Text>
+          <Text style={{color:'white', marginLeft:10}}>    ← b</Text>
           <TouchableOpacity style={{marginTop:2,alignItems:'center',marginLeft:10,backgroundColor:'#D9D9D9', borderRadius:10,height:25,width:50}}
-          onPress={()=>HandleVariables('b')} >
+          onPress={()=>HandleVariables('b')} > 
             <Text style={{fontSize:16,fontWeight:'bold'}}>° ' "</Text>
           </TouchableOpacity>
         </View>
 
         <View>
-          <Text style={{color:'white', marginLeft:16}}>|x|     c</Text>
+          <Text style={{color:'white', marginLeft:16}}>Abs  c</Text>
           <TouchableOpacity style={{marginTop:2,alignItems:'center',marginLeft:10,backgroundColor:'#D9D9D9', borderRadius:10,height:25,width:50}}
           onPress={()=>HandleHyp('c')} >
             <Text style={{fontSize:16,fontWeight:'bold'}}>hyp</Text>
@@ -883,7 +1091,7 @@ return (
             </View>
           </View>
           <TouchableOpacity style={{alignItems:'center',backgroundColor:'#E07D31', borderRadius:10,height:32,width:55,marginTop:1,marginLeft:18}}
-           >
+           onPress={()=>handleBackspace()}>
             <Text style={{color:'black',fontSize:23,fontWeight:'bold'}}>⌫</Text>
           </TouchableOpacity>
         </View>
@@ -1071,7 +1279,7 @@ return (
             </View>
           </View>
           <TouchableOpacity style={{alignItems:'center',backgroundColor:'#D9D9D9', borderRadius:10,height:32,width:55,marginTop:1,marginLeft:14}}
-            >
+           onPress={()=>handleAns()} >
             <Text style={{color:'black',fontSize:18,fontWeight:'bold',marginTop:4}}>Ans</Text>
           </TouchableOpacity>
         </View>
@@ -1082,7 +1290,8 @@ return (
               <Text style={{marginLeft:10,color:'white'}}>History</Text>
             </View>
           </View>
-          <TouchableOpacity style={{alignItems:'center',backgroundColor:'#D9D9D9', borderRadius:10,height:32,width:55,marginTop:1,marginLeft:12}}>
+          <TouchableOpacity style={{alignItems:'center',backgroundColor:'#D9D9D9', borderRadius:10,height:32,width:55,marginTop:1,marginLeft:12}}
+          onPress={()=>handleEquals()}>
             <Text style={{marginLeft:6,color:'black',fontSize:24,fontWeight:'bold',marginLeft:2}}>=</Text>
           </TouchableOpacity>
         </View>

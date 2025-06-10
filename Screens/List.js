@@ -33,10 +33,10 @@ export const modes={"simplemodes":[
 
 ],
 "eq":[
-{id:'1',name:'anX+bnY=cn'},
-{id:'2',name:'anX+bnY+cnZ=dn'},
-{id:'3',name:'aX²+bX+c=0'},
-{id:'4',name:'aX³+bX²+cX+d=0'},
+{id:'1',name:'anX+bnY=cn',value:'linear'},
+{id:'2',name:'anX+bnY+cnZ=dn',value:'quadratic'},
+{id:'3',name:'aX²+bX+c=0',value:'cubic'},
+{id:'4',name:'aX³+bX²+cX+d=0',value:'quartic'},
 
 ],
 "matrix":[
@@ -54,7 +54,7 @@ export const modes={"simplemodes":[
 {id:'2',name:'VectB'},
 {id:'3',name:'VectC'},
 ],
-"conversions":[
+"shifteight":[
     {"id":"1", "name":"in ▶ cm"},
     {"id":"2", "name":"cm ▶ in"},
     {"id":"3", "name":"ft ▶ m"},
@@ -96,7 +96,7 @@ export const modes={"simplemodes":[
     {"id":"39", "name":"J ▶ cal"},
     {"id":"40", "name":"cal ▶ J"}
 ],
-"constant":[
+"shiftseven":[
     {"id":"1", "upper":"Proton mass", "lower":"1.67262189821 × 10⁻²⁷ kg", "actual":"mp"},
     {"id":"2", "upper":"Neutron mass", "lower":"1.67492747121 × 10⁻²⁷ kg", "actual":"mn"},
     {"id":"3", "upper":"Electron mass", "lower":"9.10938356 × 10⁻³¹ kg", "actual":"me"},

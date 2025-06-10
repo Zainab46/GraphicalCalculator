@@ -1,55 +1,74 @@
 import React, { useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, TextInput, StyleSheet, ScrollView } from 'react-native';
 import { modes } from '../List';
-function EquationMenu({navigation}){
 
-  const EquationMenuItems=(id,value)=>{
-   if(id=='1'){
-        navigation.navigate('Main',{eqvalues:value});
-    }
-    else if(id=='2'){
-        navigation.navigate('Main',{eqvalues:value});
-    }
-    else  if(id=='3'){
-        navigation.navigate('Main',{eqvalues:value});
-    }
-     else if(id=='4'){
-        navigation.navigate('Main',{eqvalues:value});
+function EquationMenu() {
+  const [selectedEquation, setSelectedEquation] = useState(null);
+  const [inputs, setInputs] = useState({ a: '', b: '', c: '', d: '', e: '' });
+
+  const handleEquationSelect = (value) => {
+    setSelectedEquation(value);
+    setInputs({ a: '', b: '', c: '', d: '', e: '' }); // reset inputs
+  };
+
+  const renderInputs = () => {
+    if (!selectedEquation) return null;
+
+    const inputFields = [];
+
+    if (selectedEquation === 'linear') {
+      inputFields.push('a', 'b');
+    } else if (selectedEquation === 'quadratic') {
+      inputFields.push('a', 'b', 'c');
+    } else if (selectedEquation === 'cubic') {
+      inputFields.push('a', 'b', 'c', 'd');
+    } else if (selectedEquation === 'quartic') {
+      inputFields.push('a', 'b', 'c', 'd', 'e');
     }
 
-    }
-    
+    return (
+      <View style={styles.inputContainer}>
+        <Text style={styles.headingText}>{selectedEquation.toUpperCase()} Equation Inputs</Text>
+        {inputFields.map((field) => (
+          <TextInput
+            key={field}
+            style={styles.input}
+            placeholder={`Enter ${field}`}
+            placeholderTextColor="#999"
+            value={inputs[field]}
+            onChangeText={(text) => setInputs({ ...inputs, [field]: text })}
+            keyboardType="numeric"
+          />
+        ))}
+      </View>
+    );
+  };
 
   return (
-    <View style={styles.container}>
-      <FlatList
-        data={modes.eq}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-            <View style={{width:400,borderRadius:5,borderWidth:1,backgroundColor:'#434547',borderColor:'#83888d'}}>
-           <TouchableOpacity onPress={() => EquationMenuItems(item.id,item.value)} style={styles.item}>
-            <Text style={styles.itemText}>{item.id}:      {item.name}</Text>
-           </TouchableOpacity>
+    <ScrollView style={styles.container}>
+      {!selectedEquation && (
+        <FlatList
+          data={modes.eq}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <View style={{ width: 400, borderRadius: 5, borderWidth: 1, backgroundColor: '#434547', borderColor: '#83888d' }}>
+              <TouchableOpacity onPress={() => handleEquationSelect(item.value)} style={styles.item}>
+                <Text style={styles.itemText}>{item.id}:      {item.name}</Text>
+              </TouchableOpacity>
             </View>
-         
-        )}
-      />
-    </View>
+          )}
+        />
+      )}
+      {renderInputs()}
+    </ScrollView>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#222', 
+    backgroundColor: '#222',
     paddingTop: 20,
-  },
-  header: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    color: 'white',
-    marginBottom: 10,
   },
   item: {
     paddingVertical: 20,
@@ -60,12 +79,26 @@ const styles = StyleSheet.create({
   itemText: {
     fontSize: 18,
     color: 'white',
-    fontWeight:'bold'
+    fontWeight: 'bold'
   },
-  underline: {
-    height: 2,
-    backgroundColor: 'blue',
-    marginTop: 4,
+  inputContainer: {
+    padding: 20,
+  },
+  headingText: {
+    fontSize: 20,
+    color: '#fff',
+    fontWeight: 'bold',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#777',
+    padding: 10,
+    marginBottom: 10,
+    borderRadius: 6,
+    backgroundColor: '#333',
+    color: 'white',
   },
 });
 
