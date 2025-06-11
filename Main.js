@@ -536,6 +536,25 @@ if(hypitems!==null&&shift==false){
 
 }
 
+const handle_integration_and_derivation=()=>{
+  if (shift===false){
+    const currentPos = cursorPosition !== null ? cursorPosition : expressionInput.length;
+    const newExpression = expressionInput.substring(0, currentPos) + '∫(a,b,f(x),dx)' + 
+                         expressionInput.substring(currentPos);
+  setExpressionInput(newExpression);
+   setFirstPlaceholderPosition(currentPos + 6);
+  setCursorPosition(currentPos + 3); 
+  }
+  else if (shift===true){
+const currentPos = cursorPosition !== null ? cursorPosition : expressionInput.length;
+    const newExpression = expressionInput.substring(0, currentPos) + 'd/dx(f(x),x0)' + 
+                         expressionInput.substring(currentPos);
+  setExpressionInput(newExpression);
+   setFirstPlaceholderPosition(currentPos + 6);
+  setCursorPosition(currentPos + 3); 
+  }
+}
+
   // Find if the expression ends with a special token
   const findSpecialToken = (expression) => {
     for (const token of specialTokens) {
@@ -598,6 +617,14 @@ const evaluateExpression = (expr) => {
 
   // Handle factorial e.g., 5! => factorial(5)
   expr = expr.replace(/(\d+|\([^()]*\))\s*!/g, 'factorial($1)');
+
+   // Handle integration e.g., ∫(a,b,f(x),dx) => computeIntegration(a, b, f(x))
+  expr = expr.replace(/∫\(([^,]+),([^,]+),([^,]+),dx\)/g, 'computeIntegration($1, $2, "$3")');
+
+  // Handle differentiation e.g., d/dx(f(x),x0) => computeDerivative(f(x), x0)
+  expr = expr.replace(/d\/dx\(([^,]+)(?:,([^)]+))?\)/g, (match, fx, x0) => {
+    return x0 ? `computeDerivative("${fx}", ${x0})` : `computeDerivative("${fx}")`;
+  });
 
   // Handle x⁻¹ => 1/x or (expr)⁻¹ => 1/(expr)
   expr = expr.replace(/(\d+|\([^()]*\))⁻¹/g, '(1/($1))');
@@ -800,7 +827,7 @@ return (
 
         <View>
           <Text style={{color:'white', marginLeft:20}}>d/dx</Text>
-          <TouchableOpacity style={{alignItems:'center',marginLeft:10,backgroundColor:'#D9D9D9', borderRadius:10,height:25,width:50}}>
+          <TouchableOpacity style={{alignItems:'center',marginLeft:10,backgroundColor:'#D9D9D9', borderRadius:10,height:25,width:50}} onPress={()=>{handle_integration_and_derivation()}}>
             <View style={{flexDirection:'row'}}>
               <View>
                 <Text style={{fontSize:16,fontWeight:'bold'}}>∫</Text>
