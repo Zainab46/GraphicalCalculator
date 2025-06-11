@@ -4,7 +4,7 @@ import HyperbolicMenu from "./HyperbolicMenu";
 import { factorial , PI,E,abs,sqrt, div_mul, divide, cbrt, square, cube, x_yrt,
   makeNegative, computeLog10, computeLn,computeLogBase, 
   computeSummation,taylorSin,taylorTan,taylorCos,taylorAsin,taylorAcos,taylorAtan,
-taylorSinh,taylorCosh,taylorTanh,taylorAsinh,taylorAcosh,taylorAtanh,dmsToDecimal} from "./Screens/AllLogics";
+taylorSinh,taylorCosh,taylorTanh,taylorAsinh,taylorAcosh,taylorAtanh,dmsToDecimal,computeDerivative,computeIntegration} from "./Screens/AllLogics";
 
 //ya mainfunction hai
 function Main({navigation,ActualMode,setActualMode,route}){
@@ -618,13 +618,7 @@ const evaluateExpression = (expr) => {
   // Handle factorial e.g., 5! => factorial(5)
   expr = expr.replace(/(\d+|\([^()]*\))\s*!/g, 'factorial($1)');
 
-   // Handle integration e.g., ∫(a,b,f(x),dx) => computeIntegration(a, b, f(x))
-  expr = expr.replace(/∫\(([^,]+),([^,]+),([^,]+),dx\)/g, 'computeIntegration($1, $2, "$3")');
-
-  // Handle differentiation e.g., d/dx(f(x),x0) => computeDerivative(f(x), x0)
-  expr = expr.replace(/d\/dx\(([^,]+)(?:,([^)]+))?\)/g, (match, fx, x0) => {
-    return x0 ? `computeDerivative("${fx}", ${x0})` : `computeDerivative("${fx}")`;
-  });
+  
 
   // Handle x⁻¹ => 1/x or (expr)⁻¹ => 1/(expr)
   expr = expr.replace(/(\d+|\([^()]*\))⁻¹/g, '(1/($1))');
@@ -668,6 +662,13 @@ expr = expr.replace(/log(\d+)\(([^)]+)\)/g, 'computeLogBase($2, $1)');
 //summation
 expr = expr.replace(/∑\(([^,]+),([^,]+),([^,]+),([^)]+)\)/g, 'computeSummation($1, $2, $3, $4)');
 
+ // Handle integration e.g., ∫(a,b,f(x),dx) => computeIntegration(a, b, f(x))
+  expr = expr.replace(/∫\(([^,]+),([^,]+),([^,]+),dx\)/g, 'computeIntegration($1, $2, "$3")');
+
+  // Handle differentiation e.g., d/dx(f(x),x0) => computeDerivative(f(x), x0)
+  expr = expr.replace(/d\/dx\(([^,]+)(?:,([^)]+))?\)/g, (match, fx, x0) => {
+    return x0 ? `computeDerivative("${fx}", ${x0})` : `computeDerivative("${fx}")`;
+  });
 
 
   // Convert angles based on DRG mode for trigonometric functions
@@ -705,14 +706,14 @@ expr = expr.replace(/∑\(([^,]+),([^,]+),([^,]+),([^)]+)\)/g, 'computeSummation
   try {
     const evalInScope = new Function(
       'PI', 'E', 'factorial','abs','sqrt','divide','div_mul','cbrt','square','cube','power',
-      'makeNegative','computeLog10','computeLn','computeLogBase',
+      'makeNegative','computeLog10','computeLn','computeLogBase','computeIntegration','computeDerivative',
       'computeSummation','taylorSin','taylorCos','taylorTan',
       'taylorAsin','taylorAcos','taylorAtan','taylorSinh','taylorCosh','taylorTanh','taylorAsinh','taylorAcosh','taylorAtanh','dmsToDecimal',
      `return ${expr};`
     );
 
     const result = evalInScope(PI, E, factorial,abs,sqrt,divide,div_mul,cbrt,square,cube,x_yrt,makeNegative,computeLog10,computeLn,computeLogBase,computeSummation,taylorSin,taylorCos,
-      taylorTan,taylorAsin,taylorAcos,taylorAtan,taylorSinh,taylorCosh,taylorTanh,taylorAsinh,taylorAcosh,taylorAtanh,dmsToDecimal
+      taylorTan,taylorAsin,taylorAcos,computeDerivative,computeIntegration,taylorAtan,taylorSinh,taylorCosh,taylorTanh,taylorAsinh,taylorAcosh,taylorAtanh,dmsToDecimal
     );
     return result;
   } catch (error) {
