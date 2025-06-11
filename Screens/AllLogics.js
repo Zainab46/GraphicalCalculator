@@ -370,73 +370,35 @@ export const taylorAtanh = (x) => {
   return 0.5 * computeLn((1 + x) / (1 - x));
 };
 
+export function dmsToDecimal(dmsString) {
+  const parts = dmsString
+    .split('°')
+    .map(p => p.trim())
+    .filter(p => p !== '');
 
-// Numerical integration using Simpson's 1/3 rule
-export const computeIntegration = (a, b, fx) => {
-  try {
-    // Evaluate a and b
-    a = evaluateExpression(a);
-    b = evaluateExpression(b);
-    if (isNaN(a) || isNaN(b)) return "Error: Invalid bounds";
+  if (parts.length === 0 || parts.length > 3) {
+    throw new Error("Invalid DMS format: too many components");
+  }
 
-    // Number of intervals (must be even for Simpson's rule)
-    const n = 1000; // Adjust for precision
-    if (n % 2 !== 0) throw new Error("Number of intervals must be even");
-
-    const h = (b - a) / n;
-    let sum = 0;
-
-    // Evaluate f(x) at each point
-    for (let i = 0; i <= n; i++) {
-      const x = a + i * h;
-      // Replace 'x' in fx with the current x value
-      let fxi = fx.replace(/\bx\b/g, `(${x})`);
-      fxi = evaluateExpression(fxi);
-      if (isNaN(fxi)) return "Error: Invalid integrand";
-
-      // Simpson's rule coefficients
-      if (i === 0 || i === n) {
-        sum += fxi;
-      } else if (i % 2 === 0) {
-        sum += 2 * fxi;
-      } else {
-        sum += 4 * fxi;
-      }
+  // Validate that all parts are numeric
+  for (const part of parts) {
+    if (isNaN(part)) {
+      throw new Error("Invalid DMS format: all components must be numeric");
     }
-
-    // Compute final result
-    const result = (h / 3) * sum;
-    return result;
-  } catch (error) {
-    console.error("Integration error:", error);
-    return "Error";
   }
-};
 
+  const [deg = 0, min = 0, sec = 0] = parts.map(Number);
 
-// Numerical differentiation using central difference method
-export const computeDerivative = (fx, x0) => {
-  try {
-    // If x0 is not provided, default to x = 0
-    x0 = x0 ? evaluateExpression(x0) : 0;
-    if (isNaN(x0)) return "Error: Invalid evaluation point";
-
-    // Small step size for numerical differentiation
-    const h = 0.0001; // Adjust for precision
-
-    // Central difference: (f(x0+h) - f(x0-h)) / (2h)
-    let fxPlusH = fx.replace(/\bx\b/g, `(${x0 + h})`);
-    let fxMinusH = fx.replace(/\bx\b/g, `(${x0 - h})`);
-
-    fxPlusH = evaluateExpression(fxPlusH);
-    fxMinusH = evaluateExpression(fxMinusH);
-
-    if (isNaN(fxPlusH) || isNaN(fxMinusH)) return "Error: Invalid function";
-
-    const result = (fxPlusH - fxMinusH) / (2 * h);
-    return result;
-  } catch (error) {
-    console.error("Differentiation error:", error);
-    return "Error";
+  // Ensure correct order: degrees is first, minutes second, etc.
+  if (deg === undefined || min < 0 || sec < 0) {
+    throw new Error("Invalid DMS format");
   }
-};
+
+  // Additional range validation (optional):
+  if (min >= 60 || sec >= 60) {
+    throw new Error("Minutes and seconds must be less than 60");
+  }
+
+  const decimal = deg + min / 60 + sec / 3600;
+  return parseFloat(decimal.toFixed(6));
+}
