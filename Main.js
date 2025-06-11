@@ -6,7 +6,7 @@ import { factorial , PI,E,abs,sqrt, div_mul, divide, cbrt, square, cube, x_yrt,
   computeSummation,taylorSin,taylorTan,taylorCos,taylorAsin,taylorAcos,taylorAtan,
 taylorSinh,taylorCosh,taylorTanh,taylorAsinh,taylorAcosh,taylorAtanh,computeIntegration,computeDerivative} from "./Screens/AllLogics";
 
-
+//ya mainfunction hai
 function Main({navigation,ActualMode,setActualMode,route}){
   
   const [shift, setShift] = useState(false);
