@@ -25,6 +25,8 @@ function Main({navigation,ActualMode,setActualMode,route}){
   const[BaseStartPosition,setBaseStartPosition]=useState(null);
   const[ExponentStartPosition,setExponentStartPosition]=useState(null);
   let hypitems= route?.params?.hypvalues??null;
+  let eqvalues=route?.params?.equation??null;
+  console.log(eqvalues)
   const [lastresult,setLastResult]=useState(null);
 
 
@@ -91,6 +93,7 @@ else if(shift===false){
  useEffect(() => {
     ShiftAlphaHandling();
     ShowHyp();
+
   }, [shift, alpha,hypitems]);
 
 

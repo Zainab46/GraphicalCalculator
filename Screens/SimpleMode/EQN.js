@@ -49,7 +49,7 @@ const solveQuadratic = (a, b, c) => {
   return [(-b + sqrtD) / (2 * a), (-b - sqrtD) / (2 * a)];
 };
 
-function EquationMenu() {
+function EquationMenu({navigation,route}) {
   const [selectedEquation, setSelectedEquation] = useState(null);
   const [inputs, setInputs] = useState({});
   const [result, setResult] = useState(null);
@@ -70,12 +70,20 @@ function EquationMenu() {
       // Three equations: a1x² + b1x + c1 = 0, etc.
       return ['a1', 'b1', 'c1', 'a2', 'b2', 'c2', 'a3', 'b3', 'c3'];
     } else if (selectedEquation === 'cubic') {
-      return ['a1', 'b1', 'c1', 'd1', 'a2', 'b2', 'c2', 'd2', 'a3', 'b3', 'c3', 'd3'];
+      return ['a1', 'b1', 'c1'];
     } else if (selectedEquation === 'quartic') {
-      return ['a1', 'b1', 'c1', 'd1', 'e1', 'a2', 'b2', 'c2', 'd2', 'e2', 'a3', 'b3', 'c3', 'd3', 'e3'];
+      return ['a1', 'b1', 'c1', 'd1'];
     }
     return [];
   };
+
+  const navigateToMain=()=>{
+ handleSolve();
+ if(result){
+  navigation.navigate('Main',{equation:result})
+ }
+
+  }
 
   const handleSolve = () => {
     const inputValues = Object.values(inputs).map(val => parseFloat(val) || 0);
@@ -126,8 +134,8 @@ function EquationMenu() {
             keyboardType="numeric"
           />
         ))}
-        <Button title="Solve" onPress={handleSolve} />
-        {result && <Text style={styles.resultText}>{result}</Text>}
+        <Button title="Solve" onPress={()=>navigateToMain()} />
+       
       </View>
     );
   };
