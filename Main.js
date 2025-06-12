@@ -509,7 +509,9 @@ else if(shift === true && variable === 'm' && alpha===false){
 
 // Function to handle operator clicks
   const handleOperatorClick = (operator) => {
-    setExpressionInput(expressionInput + operator);
+    const currentPos = cursorPosition !== null ? cursorPosition : expressionInput.length;
+    setExpressionInput(expressionInput.substring(0, currentPos) + operator + expressionInput.substring(currentPos));
+    setCursorPosition(currentPos + 1);
   };
 
 

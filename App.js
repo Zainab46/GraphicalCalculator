@@ -17,33 +17,7 @@ const Stack= createStackNavigator();
 const App=()=>{
 const[ActualMode,setActualMode]=useState("COMP");
 
- const forCustomModal = ({ current, next, layouts }) => {
-        const progress = current.progress;
-        
-        return {
-          cardStyle: {
-            transform: [
-              {
-                translateY: progress.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [layouts.screen.height, layouts.screen.height * 0.2],
-                }),
-              },],
-            borderTopLeftRadius: 20,
-            borderTopRightRadius: 20,
-            overflow: 'hidden',
-            marginTop: 'auto', // Push to bottom
-            height: '50%', // Half screen height
-          },
-          overlayStyle: {
-            opacity: progress.interpolate({
-              inputRange: [0, 1],
-              outputRange: [0, 0.5],
-            }),
-            backgroundColor: 'black',
-          },
-        };
-      };
+
 return(
 <NavigationContainer>
  <Stack.Navigator initialRouteName="Main"  screenOptions={{
@@ -58,12 +32,7 @@ return(
     )}
 </Stack.Screen>        
    
-     <Stack.Group
-          screenOptions={{
-            cardStyleInterpolator: forCustomModal,
-            presentation: 'transparentModal',
-          }}
-        >
+     
           <Stack.Screen 
             name="SimpleMode"  
             options={{
@@ -71,8 +40,7 @@ return(
               headerTitle: 'MODE',
               headerStyle: { 
                 backgroundColor: '#434547',
-                borderTopLeftRadius: 20,
-                borderTopRightRadius: 20,
+                
               },
               headerTitleStyle: { 
                 marginLeft: 100, 
@@ -96,8 +64,7 @@ return(
               headerTitle: 'MODE',
               headerStyle: { 
                 backgroundColor: '#434547',
-                borderTopLeftRadius: 20,
-                borderTopRightRadius: 20,
+                
               },
               headerTitleStyle: { 
                 marginLeft: 100, 
@@ -116,8 +83,7 @@ return(
               headerTitle: 'MODE',
               headerStyle: { 
                 backgroundColor: '#434547',
-                borderTopLeftRadius: 20,
-                borderTopRightRadius: 20,
+                
               },
               headerTitleStyle: { 
                 marginLeft: 100, 
@@ -135,8 +101,7 @@ return(
               headerTitle: 'MODE',
               headerStyle: { 
                 backgroundColor: '#434547',
-                borderTopLeftRadius: 20,
-                borderTopRightRadius: 20,
+                
               },
               headerTitleStyle: { 
                 marginLeft: 100, 
@@ -154,8 +119,7 @@ return(
               headerTitle: 'MODE',
               headerStyle: { 
                 backgroundColor: '#434547',
-                borderTopLeftRadius: 20,
-                borderTopRightRadius: 20,
+               
               },
               headerTitleStyle: { 
                 marginLeft: 100, 
@@ -173,8 +137,7 @@ return(
               headerTitle: 'MODE',
               headerStyle: { 
                 backgroundColor: '#434547',
-                borderTopLeftRadius: 20,
-                borderTopRightRadius: 20,
+               
               },
               headerTitleStyle: { 
                 marginLeft: 100, 
@@ -189,11 +152,10 @@ return(
             component={Shifteight}
             options={{
               headerShown: true,
-              headerTitle: 'MODE',
+              headerTitle: 'CONVERTIONS',
               headerStyle: { 
                 backgroundColor: '#434547',
-                borderTopLeftRadius: 20,
-                borderTopRightRadius: 20,
+              
               },
               headerTitleStyle: { 
                 marginLeft: 100, 
@@ -209,11 +171,10 @@ return(
             component={Shiftseven}
             options={{
               headerShown: true,
-              headerTitle: 'MODE',
+              headerTitle: 'CONSTANTS',
               headerStyle: { 
                 backgroundColor: '#434547',
-                borderTopLeftRadius: 20,
-                borderTopRightRadius: 20,
+              
               },
               headerTitleStyle: { 
                 marginLeft: 100, 
@@ -225,7 +186,7 @@ return(
           />
         
   
-</Stack.Group>
+
 </Stack.Navigator>
 </NavigationContainer>
 );
