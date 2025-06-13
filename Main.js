@@ -554,12 +554,6 @@ else if(eqvalues!=null){
     const newExpression = expressionInput.substring(0, currentPos) + shift_seven + 
                          expressionInput.substring(currentPos);
                            setExpressionInput(newExpression);
-    const newExpression2 = result.substring(0, currentPos) + shift_seven2 + 
-                        result.substring(currentPos);
-                        setResult(newExpression2);                       
-   setFirstPlaceholderPosition(currentPos + 6);
-  setCursorPosition(currentPos + 8);  
-  shift_seven=null;
   shift_seven2=null;                      
 }
 
@@ -764,6 +758,11 @@ expr = expr.replace(/∑\(([^,]+),([^,]+),([^,]+),([^)]+)\)/g, 'computeSummation
       const result = evaluateExpression(expressionInput);
       setResult(result.toString());
       setLastResult(result.toString());
+    }
+
+    else if (shift_seven){
+      setResult(shift_seven2)
+      shift_seven2=null
     }
   } catch (error) {
     console.error("Calculation error:", error);
