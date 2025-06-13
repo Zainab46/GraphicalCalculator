@@ -24,10 +24,12 @@ function Main({navigation,ActualMode,setActualMode,route}){
   const[ThirdPlaceHolderPosition,setThirdPlaceholderPosition]=useState(null);
   const[BaseStartPosition,setBaseStartPosition]=useState(null);
   const[ExponentStartPosition,setExponentStartPosition]=useState(null);
+  const [lastresult,setLastResult]=useState(null);
   let hypitems= route?.params?.hypvalues??null;
   let eqvalues=route?.params?.equation??null;
-  console.log(eqvalues)
-  const [lastresult,setLastResult]=useState(null);
+  let shift_seven=route?.params?.shiftsvn??null;
+ let shift_seven2=route?.params?.shiftsn??null;
+ 
 
 
 
@@ -94,7 +96,7 @@ else if(shift===false){
     ShiftAlphaHandling();
     ShowHyp();
 
-  }, [shift, alpha,hypitems]);
+  }, [shift, alpha,hypitems,eqvalues,shift_seven]);
 
 
   // handle text on button clicks
@@ -538,8 +540,33 @@ if(hypitems!==null&&shift==false){
   setCursorPosition(currentPos + 8);  
   hypitems=null;
 }
+else if(eqvalues!=null){
+   const currentPos = cursorPosition !== null ? cursorPosition : expressionInput.length;
+    const newExpression = expressionInput.substring(0, currentPos) + eqvalues + 
+                         expressionInput.substring(currentPos);
+                           setExpressionInput(newExpression);
+  setFirstPlaceholderPosition(currentPos + 6);
+  setCursorPosition(currentPos + 8);  
+  eqvalues=null;
+}
+  else if(shift_seven!=null&& shift_seven2!=null){
+   const currentPos = cursorPosition !== null ? cursorPosition : expressionInput.length;
+    const newExpression = expressionInput.substring(0, currentPos) + shift_seven + 
+                         expressionInput.substring(currentPos);
+                           setExpressionInput(newExpression);
+    const newExpression2 = result.substring(0, currentPos) + shift_seven2 + 
+                        result.substring(currentPos);
+                        setResult(newExpression2);                       
+   setFirstPlaceholderPosition(currentPos + 6);
+  setCursorPosition(currentPos + 8);  
+  shift_seven=null;
+  shift_seven2=null;                      
+}
+
+                         
 
 }
+
 
 const handle_integration_and_derivation=()=>{
   if (shift===false){

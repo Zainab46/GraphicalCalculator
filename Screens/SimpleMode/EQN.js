@@ -77,43 +77,38 @@ function EquationMenu({navigation,route}) {
     return [];
   };
 
-  const navigateToMain=()=>{
- handleSolve();
- if(result){
-  navigation.navigate('Main',{equation:result})
- }
+const navigateToMain = () => {
+  const inputValues = Object.values(inputs).map(val => parseFloat(val) || 0);
+  let solution = null;
+  let finalResult = '';
 
+  if (selectedEquation === 'linear') {
+    const coefficients = [
+      [inputValues[0], inputValues[1]], // a1, b1
+      [inputValues[3], inputValues[4]], // a2, b2
+    ];
+    const constants = [inputValues[2], inputValues[5]]; // c1, c2
+    solution = solveLinearSystem(coefficients, constants);
+    if (solution) {
+      finalResult = `x = ${solution[0].toFixed(2)}, y = ${solution[1].toFixed(2)}`;
+    } else {
+      finalResult = 'No solution or invalid input';
+    }
+  } else if (selectedEquation === 'quadratic') {
+    const [a, b, c] = inputValues.slice(0, 3);
+    solution = solveQuadratic(a, b, c);
+    if (solution) {
+      finalResult = `Roots: x1 = ${solution[0].toFixed(2)}, x2 = ${solution[1].toFixed(2)}`;
+    } else {
+      finalResult = 'No real roots or invalid input';
+    }
+  } else {
+    finalResult = 'Solver not implemented for this equation type';
   }
 
-  const handleSolve = () => {
-    const inputValues = Object.values(inputs).map(val => parseFloat(val) || 0);
-    let solution = null;
+  navigation.navigate('Main', { equation: finalResult });
+};
 
-    if (selectedEquation === 'linear') {
-      const coefficients = [
-        [inputValues[0], inputValues[1]], // a1, b1
-        [inputValues[3], inputValues[4]], // a2, b2
-      ];
-      const constants = [inputValues[2], inputValues[5]]; // c1, c2
-      solution = solveLinearSystem(coefficients, constants);
-      if (solution) {
-        setResult(`x = ${solution[0].toFixed(2)}, y = ${solution[1].toFixed(2)}`);
-      } else {
-        setResult('No solution or invalid input');
-      }
-    } else if (selectedEquation === 'quadratic') {
-      // Solve first quadratic equation for simplicity
-      const [a, b, c] = inputValues.slice(0, 3); // a1, b1, c1
-      solution = solveQuadratic(a, b, c);
-      if (solution) {
-        setResult(`Roots: x1 = ${solution[0].toFixed(2)}, x2 = ${solution[1].toFixed(2)}`);
-      } else {
-        setResult('No real roots or invalid input');
-      }
-    } else {
-      setResult('Solver not implemented for this equation type');
-    }
-  };
 
   const renderInputs = () => {
     if (!selectedEquation) return null;
@@ -141,7 +136,7 @@ function EquationMenu({navigation,route}) {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <View style={styles.container}>
       {!selectedEquation && (
         <FlatList
           data={modes.eq}
@@ -156,7 +151,7 @@ function EquationMenu({navigation,route}) {
         />
       )}
       {renderInputs()}
-    </ScrollView>
+    </View>
   );
 }
 

@@ -4,36 +4,38 @@ import { modes } from "./List";
 
 function Shifteight({navigation}){
  
+const[selectedconversion,setSelectedConversion]=useState('');
+
+const[input,setInput]= useState('');
+
+const [result,setResult]=useState('');
 
 
-const HandleShiftModeItems=(id)=>{
 
 
-}
 
-const showshiftmodes=({item})=>{
-return(
-<View style={{width:400,borderRadius:5,borderWidth:1,backgroundColor:'#434547',borderColor:'#83888d'}}>
-<TouchableOpacity style={styles.item} onPress={()=>{HandleShiftModeItems(item.id)}} >
-<Text style={styles.itemText}>{item.id} :  {item.name}</Text>
-</TouchableOpacity>
-
-
-</View>
-);
-    }  
 
 return(
-    <View  style={styles.container}>
+ <View  style={styles.container}>
         
        <FlatList
        data={modes.shifteight}
-       renderItem={showshiftmodes}
-       keyExtractor={(item,index)=>index.toString()}
-       >
-       
-       </FlatList>
+       renderItems={({item})=>{
+    return(
+    <View style={{width:400,borderRadius:5,borderWidth:1,backgroundColor:'#434547',borderColor:'#83888d'}}>
+   <TouchableOpacity style={styles.item}  >
+   <Text style={styles.itemText}>{item.id} :  {item.name}</Text> 
+   </TouchableOpacity>
+</View>
+);
+ }  
+  }
+  keyExtractor={(item,index)=>index.toString()}
+   >
+  
+  </FlatList>
     </View>
+
 );
 
 
