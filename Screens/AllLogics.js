@@ -472,3 +472,36 @@ export const computeIntegration = (a, b, fx) => {
     return "Error";
   }
 };
+
+//arg
+export function computeArg(z) {
+  // Assume z is in the form a+bi
+  const [a, b] = parseComplex(z);
+  return Math.atan2(b, a); // radians
+}
+
+export function computecongj(z) {
+  // Complex conjugate: a+bi -> a−bi
+  const [a, b] = parseComplex(z);
+  return `${a}${b < 0 ? '+' : '-'}${Math.abs(b)}i`;
+}
+
+export function compute_abi(varName) {
+  // Assuming value is fetched by variable name
+  const z = getComplexByName(varName); // e.g., 'z' → '3+4i'
+  return z;
+}
+
+export function computePolar(varName) {
+  const polar = getPolarByName(varName); // e.g., { r: 5, theta: 30 }
+  const real = polar.r * Math.cos(toRadians(polar.theta));
+  const imag = polar.r * Math.sin(toRadians(polar.theta));
+  return `${real}+${imag}i`;
+}
+
+function parseComplex(str) {
+  const match = str.match(/^([+-]?\d+\.?\d*)([+-]\d+\.?\d*)i$/);
+  if (!match) throw new Error("Invalid complex format");
+  return [parseFloat(match[1]), parseFloat(match[2])];
+}
+

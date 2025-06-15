@@ -11,6 +11,9 @@ import VectorMenu from './Screens/SimpleMode/Vector';
 import Shiftseven from './Screens/Shiftseven';
 import Shifteight from './Screens/Shifteight';
 import BaseN from './Screens/SimpleMode/Base-N';
+import ShiftTwo from './Screens/ShiftTwo';
+import VectorCalculator from './Screens/SimpleMode/Vector';
+
 
 const Stack= createStackNavigator();
 
@@ -130,24 +133,7 @@ return(
               headerTintColor: 'white',
             }} 
           />
-          <Stack.Screen 
-            name="Vector" 
-            component={VectorMenu}
-            options={{
-              headerShown: true,
-              headerTitle: 'MODE',
-              headerStyle: { 
-                backgroundColor: '#434547',
-               
-              },
-              headerTitleStyle: { 
-                marginLeft: 100, 
-                color: 'white', 
-                fontWeight: 'bold' 
-              },
-              headerTintColor: 'white',
-            }} 
-          />
+          
           <Stack.Screen 
             name="Shifteight" 
             component={Shifteight}
@@ -194,6 +180,42 @@ return(
               headerStyle: { 
                 backgroundColor: '#434547',
                 
+              },
+              headerTitleStyle: { 
+                marginLeft: 100, 
+                color: 'white', 
+                fontWeight: 'bold' 
+              },
+              headerTintColor: 'white',
+            }} 
+          />
+        
+   <Stack.Screen 
+            name="ShiftTwo" 
+            component={ShiftTwo}
+            options={{
+              headerShown: true,
+              headerTitle: 'CMPLX',
+              headerStyle: { 
+                backgroundColor: '#434547',  
+              },
+              headerTitleStyle: { 
+                marginLeft: 100, 
+                color: 'white', 
+                fontWeight: 'bold' 
+              },
+              headerTintColor: 'white',
+            }} 
+          />
+            
+       <Stack.Screen 
+            name="Vector" 
+            component={VectorCalculator}
+            options={{
+              headerShown: true,
+              headerTitle: 'Vector',
+              headerStyle: { 
+                backgroundColor: '#434547',  
               },
               headerTitleStyle: { 
                 marginLeft: 100, 

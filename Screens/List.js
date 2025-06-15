@@ -147,7 +147,10 @@ export const modes={"simplemodes":[
 {id:'6',name:'tanh⁻¹',value:'tanh⁻¹(□)'}
 
 ],
-"history":[
-
+"shiftTwo":[
+{id:'1',name:'arg',value:'arg()'},
+{id:'2',name:'Conjg',value:'Conjg()'},
+{id:'3',name:'▶r∠θ',value:'▶r∠θ'},
+{id:'4',name:'▶a+bi',value:'▶a+bi'}
 ]
 }

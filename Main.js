@@ -4,7 +4,10 @@ import HyperbolicMenu from "./HyperbolicMenu";
 import { factorial , PI,E,abs,sqrt, div_mul, divide, cbrt, square, cube, x_yrt,
   makeNegative, computeLog10, computeLn,computeLogBase, 
   computeSummation,taylorSin,taylorTan,taylorCos,taylorAsin,taylorAcos,taylorAtan,
-taylorSinh,taylorCosh,taylorTanh,taylorAsinh,taylorAcosh,taylorAtanh,dmsToDecimal,computeDerivative,computeIntegration} from "./Screens/AllLogics";
+taylorSinh,taylorCosh,taylorTanh,taylorAsinh,taylorAcosh,taylorAtanh,
+computeArg,computecongj,compute_abi,computePolar,parseComplex,computeDerivative,computeIntegration} from "./Screens/AllLogics";
+
+
 
 //ya mainfunction hai
 function Main({navigation,ActualMode,setActualMode,route}){
@@ -28,9 +31,9 @@ function Main({navigation,ActualMode,setActualMode,route}){
   let hypitems= route?.params?.hypvalues??null;
   let eqvalues=route?.params?.equation??null;
   let shift_seven=route?.params?.shiftsvn??null;
- let shift_seven2=route?.params?.shiftsn??null;
+  let shift_seven2=route?.params?.shiftsn??null;
+  let shift_Two=route?.params?.complxvalues??null;
  
-
 
 
 // Special tokens that should be deleted as a whole
@@ -38,8 +41,6 @@ function Main({navigation,ActualMode,setActualMode,route}){
     'sin(□)', 'cos(□)', 'tan(□)', 'hyp(□)', 'log(□)', 'Ln(□)', 
     'sin⁻¹(□)', 'cos⁻¹(□)', 'tan⁻¹(□)', 'sinh(□)', 'cosh(□)', 'tanh(□)','□^□','□!','□/□','□*(□/□)','log□(□)','□√□',
     '√□','∛□','□²','□³','10^□','e^□','|□|'
-
-
 
   ];
 
@@ -96,7 +97,7 @@ else if(shift===false){
     ShiftAlphaHandling();
     ShowHyp();
 
-  }, [shift, alpha,hypitems,eqvalues,shift_seven]);
+  }, [shift, alpha,hypitems,eqvalues,shift_seven,shift_Two]);
 
 
   // handle text on button clicks
@@ -117,6 +118,10 @@ else if(shift===true && number==='8'){
     navigation.navigate('Shifteight')
   }
 
+else if(shift===true && number==='2'&& ActualMode==='CMPLX'){
+    navigation.navigate('ShiftTwo')
+  }
+
 else{
    const newExpression= expressionInput.substring(0,currentPos)+number+expressionInput.substring(currentPos);  // ab □ exist ne krta just add value at current Position 
       setExpressionInput(newExpression);
@@ -134,9 +139,9 @@ else{
                          expressionInput.substring(currentPos);
     
     setExpressionInput(newExpression);
-    setFirstPlaceholderPosition(currentPos);
-    setFunctionType('reciprocal');
+    setFirstPlaceholderPosition(currentPos); 
     setCursorPosition(currentPos + 1); // Position cursor after box
+    setFunctionType('reciprocal');
     }
     else if(shift===true){
       const currentPos = cursorPosition !== null ? cursorPosition : expressionInput.length;
@@ -557,6 +562,15 @@ else if(eqvalues!=null){
        shift_seven=null;                    
                        
 }
+else if(shift_Two!=null&&shift==true){
+   const currentPos = cursorPosition !== null ? cursorPosition : expressionInput.length;
+    const newExpression = expressionInput.substring(0, currentPos) + shift_Two + 
+                         expressionInput.substring(currentPos);
+                           setExpressionInput(newExpression);
+  setFirstPlaceholderPosition(currentPos + 3);
+  setCursorPosition(currentPos + 4);  
+  shift_Two=null;
+}
 
                          
 
@@ -691,6 +705,25 @@ expr = expr.replace(/∑\(([^,]+),([^,]+),([^,]+),([^)]+)\)/g, 'computeSummation
 
  // Handle integration e.g., ∫(a,b,f(x),dx) => computeIntegration(a, b, f(x))
   expr = expr.replace(/∫\(([^,]+),([^,]+),([^,]+),dx\)/g, 'computeIntegration($1, $2, "$3")');
+    
+  //arg
+expr = expr.replace(/arg\(([^)]+)\)/gi, 'computeArg($1)');
+
+
+  //congj
+expr = expr.replace(/congj\(([^)]+)\)/gi, 'computecongj($1)');
+
+
+  //▶a+bi
+ expr = expr.replace(/([a-zA-Z0-9_]+)\s*▶\s*[^\s)]+/g, 'compute_abi($1)');
+
+
+  //▶r∠θ
+expr = expr.replace(/([a-zA-Z0-9_]+)\s*▶\s*[^)\s]+∠[^)\s]+/g, 'computePolar($1)');
+
+
+
+
 
   // Handle differentiation e.g., d/dx(f(x),x0) => computeDerivative(f(x), x0)
   expr = expr.replace(/d\/dx\(([^,]+)(?:,([^)]+))?\)/g, (match, fx, x0) => {
@@ -735,12 +768,14 @@ expr = expr.replace(/∑\(([^,]+),([^,]+),([^,]+),([^)]+)\)/g, 'computeSummation
       'PI', 'E', 'factorial','abs','sqrt','divide','div_mul','cbrt','square','cube','power',
       'makeNegative','computeLog10','computeLn','computeLogBase','computeIntegration','computeDerivative',
       'computeSummation','taylorSin','taylorCos','taylorTan',
-      'taylorAsin','taylorAcos','taylorAtan','taylorSinh','taylorCosh','taylorTanh','taylorAsinh','taylorAcosh','taylorAtanh','dmsToDecimal',
+      'taylorAsin','taylorAcos','taylorAtan','taylorSinh','taylorCosh','taylorTanh','taylorAsinh','taylorAcosh','taylorAtanh',
+      'computArg','computecongj','compute_abi','computePolar',
      `return ${expr};`
     );
 
     const result = evalInScope(PI, E, factorial,abs,sqrt,divide,div_mul,cbrt,square,cube,x_yrt,makeNegative,computeLog10,computeLn,computeLogBase,computeSummation,taylorSin,taylorCos,
-      taylorTan,taylorAsin,taylorAcos,computeDerivative,computeIntegration,taylorAtan,taylorSinh,taylorCosh,taylorTanh,taylorAsinh,taylorAcosh,taylorAtanh,dmsToDecimal
+      taylorTan,taylorAsin,taylorAcos,computeDerivative,computeIntegration,taylorAtan,taylorSinh,taylorCosh,taylorTanh,taylorAsinh,taylorAcosh,taylorAtanh,computeArg,
+      computecongj,compute_abi,computePolar
     );
     return result;
   } catch (error) {
@@ -788,7 +823,7 @@ return (
       });    }
   } }
   value={expressionInput}  
-  editable={false}  
+  editable={true}  
   showSoftInputOnFocus={false}
   caretHidden={false}
   autoFocus={true}
@@ -800,7 +835,7 @@ return (
  
  <TextInput     style={ss.textInput} multiline={true} value={result} onChangeText={setResult}  
   editable={false}
-  
+
   />
   </View>
       <View style={{flexDirection:'row',marginTop:12}}>
