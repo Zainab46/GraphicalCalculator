@@ -20,8 +20,8 @@ function SimpleMode({navigation,ActualMode,setActualMode}){
         navigation.navigate('Stat');
      }
      else if(id=='4'){
-        setActualMode('BASE_N');
-        navigation.navigate('Base_N');
+        setActualMode('BASE-N');
+        navigation.navigate('Base-N');
      }
     else if(id=='5'){
         setActualMode('EQUATION');

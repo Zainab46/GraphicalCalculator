@@ -554,7 +554,8 @@ else if(eqvalues!=null){
     const newExpression = expressionInput.substring(0, currentPos) + shift_seven + 
                          expressionInput.substring(currentPos);
                            setExpressionInput(newExpression);
-  shift_seven2=null;                      
+       shift_seven=null;                    
+                       
 }
 
                          
@@ -787,7 +788,7 @@ return (
       });    }
   } }
   value={expressionInput}  
-  editable={true}  
+  editable={false}  
   showSoftInputOnFocus={false}
   caretHidden={false}
   autoFocus={true}
@@ -797,8 +798,9 @@ return (
   }}
 />
  
- <TextInput     style={ss.textInput} multiline={true} value={result} onChangeText={setResult}
+ <TextInput     style={ss.textInput} multiline={true} value={result} onChangeText={setResult}  
   editable={false}
+  
   />
   </View>
       <View style={{flexDirection:'row',marginTop:12}}>

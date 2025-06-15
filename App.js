@@ -10,6 +10,7 @@ import EquationMenu from './Screens/SimpleMode/EQN';
 import VectorMenu from './Screens/SimpleMode/Vector';
 import Shiftseven from './Screens/Shiftseven';
 import Shifteight from './Screens/Shifteight';
+import BaseN from './Screens/SimpleMode/Base-N';
 
 const Stack= createStackNavigator();
 
@@ -175,6 +176,24 @@ return(
               headerStyle: { 
                 backgroundColor: '#434547',
               
+              },
+              headerTitleStyle: { 
+                marginLeft: 100, 
+                color: 'white', 
+                fontWeight: 'bold' 
+              },
+              headerTintColor: 'white',
+            }} 
+          />
+        <Stack.Screen 
+            name="Base-N" 
+            component={BaseN}
+            options={{
+              headerShown: true,
+              headerTitle: 'Base-N',
+              headerStyle: { 
+                backgroundColor: '#434547',
+                
               },
               headerTitleStyle: { 
                 marginLeft: 100, 

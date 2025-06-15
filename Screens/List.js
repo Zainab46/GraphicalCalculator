@@ -146,5 +146,8 @@ export const modes={"simplemodes":[
 {id:'5',name:'cosh⁻¹',value:'cosh⁻¹(□)'},
 {id:'6',name:'tanh⁻¹',value:'tanh⁻¹(□)'}
 
+],
+"history":[
+
 ]
 }
