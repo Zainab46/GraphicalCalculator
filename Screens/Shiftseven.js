@@ -8,7 +8,7 @@ function Shiftseven({navigation,route}){
 const[Id,setSelectedId]=useState('');
 
   
-const HandleShiftModeItems=(id,actual,lower)=>{
+const HandleConstantsItems=(id,actual,lower)=>{
  if(id=='1'){
         navigation.navigate('Main',{shiftsvn:actual,shiftsn:lower});
     }
@@ -140,7 +140,7 @@ return(
        renderItem={({item})=>{
 return(
 <View style={{width:300,marginLeft:50,borderRadius:5,borderWidth:1,backgroundColor:'#434547',borderColor:'#83888d'}}>
-<TouchableOpacity style={styles.item} onPress={()=>{HandleShiftModeItems(item.id,item.actual,item.lower)}} >
+<TouchableOpacity style={styles.item} onPress={()=>{ HandleConstantsItems(item.id,item.actual,item.lower)}} >
  <View style={{flexDirection:'row',alignItems:'center'}}>
       <View style={{width:180}}>
    <Text style={styles.itemText}>{item.upper}</Text>

@@ -89,7 +89,7 @@ function Shifteight({ navigation }) {
     }
   };
 
-  const showshiftmodes = ({ item }) => {
+  const showconversions = ({ item }) => {
     const isSelected = selectedConversion && selectedConversion.id === item.id;
     return (
       <View style={{ width: "90%", borderRadius: 5, borderWidth: 1, backgroundColor: isSelected ? "#56585a" : "#434547", borderColor: "#83888d", marginVertical: 5, alignSelf: "center" }}>
@@ -124,7 +124,7 @@ function Shifteight({ navigation }) {
       {result ? <Text style={styles.resultText}>{result}</Text> : null}
       <FlatList
         data={modes.shifteight}
-        renderItem={showshiftmodes}
+        renderItem={showconversions}
         keyExtractor={(item, index) => index.toString()}
       />
     </View>
