@@ -475,32 +475,51 @@ export const computeIntegration = (a, b, fx) => {
 
 //arg
 export function computeArg(z) {
-  // Assume z is in the form a+bi
+  if (typeof z === 'number') {
+    return z >= 0 ? 0 : Math.PI; // Arg(positive real) = 0, Arg(negative real) = π
+  }
+
   const [a, b] = parseComplex(z);
-  return Math.atan2(b, a); // radians
+  return Math.atan2(b, a); // returns angle in radians
 }
 
 export function computecongj(z) {
-  // Complex conjugate: a+bi -> a−bi
+  if (typeof z === 'number') return `${z}-0i`; // real numbers only
   const [a, b] = parseComplex(z);
   return `${a}${b < 0 ? '+' : '-'}${Math.abs(b)}i`;
 }
 
 export function compute_abi(varName) {
-  // Assuming value is fetched by variable name
-  const z = getComplexByName(varName); // e.g., 'z' → '3+4i'
+  const z = getComplexByName(varName); // expected to return "a+bi" string
+  if (typeof z === 'number') return `${z}+0i`;
   return z;
 }
 
 export function computePolar(varName) {
   const polar = getPolarByName(varName); // e.g., { r: 5, theta: 30 }
+
   const real = polar.r * Math.cos(toRadians(polar.theta));
   const imag = polar.r * Math.sin(toRadians(polar.theta));
-  return `${real}+${imag}i`;
+  return `${real.toFixed(2)}${imag < 0 ? '-' : '+'}${Math.abs(imag).toFixed(2)}i`;
 }
 
-function parseComplex(str) {
-  const match = str.match(/^([+-]?\d+\.?\d*)([+-]\d+\.?\d*)i$/);
+export function parseComplex(str) {
+  // Remove all spaces
+  str = str.replace(/\s+/g, '');
+
+  // Handle pure imaginary numbers
+  if (/^[+-]?\d*\.?\d*i$/.test(str)) {
+    const b = parseFloat(str.replace('i', '')) || (str[0] === '-' ? -1 : 1);
+    return [0, b];
+  }
+
+  // Handle real numbers
+  if (/^[+-]?\d*\.?\d+$/.test(str)) {
+    return [parseFloat(str), 0];
+  }
+
+  // Handle full complex numbers like "3+4i", "-2.5-1.1i"
+  const match = str.match(/^([+-]?\d*\.?\d+)([+-]\d*\.?\d*)i$/);
   if (!match) throw new Error("Invalid complex format");
   return [parseFloat(match[1]), parseFloat(match[2])];
 }

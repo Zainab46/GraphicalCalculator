@@ -30,9 +30,10 @@ function Main({navigation,ActualMode,setActualMode,route}){
   const [lastresult,setLastResult]=useState(null);
   let hypitems= route?.params?.hypvalues??null;
   let eqvalues=route?.params?.equation??null;
-  let shift_seven=route?.params?.shiftsvn??null;
-  let shift_seven2=route?.params?.shiftsn??null;
-  let shift_Two=route?.params?.complxvalues??null;
+  const [shiftSeven, setShiftSeven] = useState(route?.params?.shiftsvn ?? null);
+  const [shiftSeven2, setShiftSeven2] = useState(route?.params?.shiftsn ?? null);
+  const [shifttwo, setshifttwo] = useState(route?.params?.complxvalues??null);
+  
  
 
 
@@ -97,7 +98,7 @@ else if(shift===false){
     ShiftAlphaHandling();
     ShowHyp();
 
-  }, [shift, alpha,hypitems,eqvalues,shift_seven,shift_Two]);
+  }, [shift, alpha,hypitems,eqvalues]);
 
 
   // handle text on button clicks
@@ -554,22 +555,23 @@ else if(eqvalues!=null){
   setCursorPosition(currentPos + 8);  
   eqvalues=null;
 }
-  else if(shift_seven!=null&& shift_seven2!=null){
-   const currentPos = cursorPosition !== null ? cursorPosition : expressionInput.length;
-    const newExpression = expressionInput.substring(0, currentPos) + shift_seven + 
-                         expressionInput.substring(currentPos);
-                           setExpressionInput(newExpression);
-       shift_seven=null;                    
-                       
+  else if (shiftSeven !== null && shiftSeven2 !== null) {
+  console.log('before= ' + shiftSeven);
+
+  const currentPos = cursorPosition !== null ? cursorPosition : expressionInput.length;
+  const newExpression = expressionInput.substring(0, currentPos) + shiftSeven + expressionInput.substring(currentPos);
+  setExpressionInput(newExpression);
+
+  // Clear after use
+  
+
+  console.log('after= ' + shiftSeven);  // Will still show old value because it's not updated immediately
 }
-else if(shift_Two!=null&&shift==true){
+else if(shifttwo!=null){
    const currentPos = cursorPosition !== null ? cursorPosition : expressionInput.length;
-    const newExpression = expressionInput.substring(0, currentPos) + shift_Two + 
-                         expressionInput.substring(currentPos);
-                           setExpressionInput(newExpression);
-  setFirstPlaceholderPosition(currentPos + 3);
-  setCursorPosition(currentPos + 4);  
-  shift_Two=null;
+  const newExpression = expressionInput.substring(0, currentPos) + shifttwo + expressionInput.substring(currentPos);
+  setExpressionInput(newExpression);
+  setshifttwo(null)
 }
 
                          
@@ -769,7 +771,7 @@ expr = expr.replace(/([a-zA-Z0-9_]+)\s*▶\s*[^)\s]+∠[^)\s]+/g, 'computePolar(
       'makeNegative','computeLog10','computeLn','computeLogBase','computeIntegration','computeDerivative',
       'computeSummation','taylorSin','taylorCos','taylorTan',
       'taylorAsin','taylorAcos','taylorAtan','taylorSinh','taylorCosh','taylorTanh','taylorAsinh','taylorAcosh','taylorAtanh',
-      'computArg','computecongj','compute_abi','computePolar',
+      'computeArg','computecongj','compute_abi','computePolar',
      `return ${expr};`
     );
 
@@ -789,17 +791,22 @@ expr = expr.replace(/([a-zA-Z0-9_]+)\s*▶\s*[^)\s]+∠[^)\s]+/g, 'computePolar(
  // Modify your handleEquals to handle the x^y special case
  const handleEquals = () => {
   try {
+     if (shiftSeven) {
+      setResult(shiftSeven2);
+      console.log(shiftSeven);
+
+      // Clear
+      setShiftSeven(null);
+      setShiftSeven2(null);
+    }
     // Normal equation evaluation
-    if (expressionInput) {
+    else if (expressionInput) {
       const result = evaluateExpression(expressionInput);
       setResult(result.toString());
       setLastResult(result.toString());
     }
 
-    else if (shift_seven){
-      setResult(shift_seven2)
-      shift_seven2=null
-    }
+    
   } catch (error) {
     console.error("Calculation error:", error);
     setResult('Error');
@@ -871,7 +878,7 @@ return (
           <Text>Alpha</Text> 
         </TouchableOpacity>
 
-        <TouchableOpacity style={{alignItems:'center',marginLeft:10,backgroundColor:'#D9D9D9', borderRadius:10,height:25,width:50}}>
+        <TouchableOpacity style={{alignItems:'center',marginLeft:10,backgroundColor:'#D9D9D9', borderRadius:10,height:25,width:50}} onPress={()=>{handleEquals()}}>
         <Image source={require('./Assets/leftArrow.png')} style={{height:15,width:15,marginTop:4}}></Image>
         </TouchableOpacity>
 
