@@ -5,7 +5,7 @@ import { factorial , PI,E,abs,sqrt, div_mul, divide, cbrt, square, cube, x_yrt,
   makeNegative, computeLog10, computeLn,computeLogBase, 
   computeSummation,taylorSin,taylorTan,taylorCos,taylorAsin,taylorAcos,taylorAtan,
 taylorSinh,taylorCosh,taylorTanh,taylorAsinh,taylorAcosh,taylorAtanh,
-computeArg,computecongj,compute_abi,computePolar,parseComplex,computeDerivative,computeIntegration} from "./Screens/AllLogics";
+computeArg,computecongj,compute_abi,computePolar,parseComplex,computeDerivative,computeIntegration,initDB,insertRecord} from "./Screens/AllLogics";
 
 
 
@@ -33,6 +33,12 @@ function Main({navigation,ActualMode,setActualMode,route}){
   const [shiftSeven, setShiftSeven] = useState(route?.params?.shiftsvn ?? null);
   const [shiftSeven2, setShiftSeven2] = useState(route?.params?.shiftsn ?? null);
   const [shifttwo, setshifttwo] = useState(route?.params?.complxvalues??null);
+  const [questions, setquestions] = useState(route?.params?.question??null);
+  const [answers, setanswers] = useState(route?.params?.answer??null);
+  const [vectors, setvectors] = useState(route?.params?.vector??null);
+  const [vecresults, setvecresults] = useState(route?.params?.vecresult??null);
+  const [bases, setbases] = useState(route?.params?.base??null);
+  const [baseresults, setbaseresults] = useState(route?.params?.baseresult??null);
   
  
 
@@ -95,6 +101,9 @@ else if(shift===false){
 }
 
  useEffect(() => {
+  (async () => {
+    await initDB();
+  })();
     ShiftAlphaHandling();
     ShowHyp();
 
@@ -108,6 +117,7 @@ const HandleNumberClick=(number)=>{
   if (currentPos< expressionInput.length && expressionInput[currentPos]==='□'){
     const newExpression= expressionInput.substring(0,currentPos)+number+expressionInput.substring(currentPos+1);  //replace that box with a number
       setExpressionInput(newExpression);
+      
       setCursorPosition(currentPos + 1);
   }
  
@@ -574,6 +584,45 @@ else if(shifttwo!=null){
   setshifttwo(null)
 }
 
+else if (questions !== null && answers !== null) {
+  console.log('before= ' + shiftSeven);
+
+  const currentPos = cursorPosition !== null ? cursorPosition : expressionInput.length;
+  const newExpression = expressionInput.substring(0, currentPos) + questions + expressionInput.substring(currentPos);
+  setExpressionInput(newExpression);
+
+
+  
+
+  console.log('after= ' + questions);  // Will still show old value because it's not updated immediately
+}
+
+ else if (vecresults !== null && vectors !== null) {
+  console.log('before= ' + vectors);
+
+  const currentPos = cursorPosition !== null ? cursorPosition : expressionInput.length;
+  const newExpression = expressionInput.substring(0, currentPos) + vectors + expressionInput.substring(currentPos);
+  setExpressionInput(newExpression);
+
+  // Clear after use
+  
+
+  console.log('after= ' + vectors);  // Will still show old value because it's not updated immediately
+}
+
+ else if (bases !== null && baseresults !== null) {
+  console.log('before= ' + bases);
+
+  const currentPos = cursorPosition !== null ? cursorPosition : expressionInput.length;
+  const newExpression = expressionInput.substring(0, currentPos) + bases + expressionInput.substring(currentPos);
+  setExpressionInput(newExpression);
+
+  // Clear after use
+  
+
+  console.log('after= ' + bases);  // Will still show old value because it's not updated immediately
+}
+
                          
 
 }
@@ -791,8 +840,43 @@ expr = expr.replace(/([a-zA-Z0-9_]+)\s*▶\s*[^)\s]+∠[^)\s]+/g, 'computePolar(
  // Modify your handleEquals to handle the x^y special case
  const handleEquals = () => {
   try {
-     if (shiftSeven) {
+
+    if (shift===true && expressionInput===''){
+      navigation.navigate('History')
+    }
+
+    else if (baseresults) {
+      setResult(baseresults);
+      insertRecord(bases,baseresults)
+      console.log(baseresults);
+
+      // Clear
+      setbaseresults(null);
+      setbases(null);
+    }
+
+    else if (vecresults) {
+      setResult(vecresults);
+      insertRecord(vectors,vecresults)
+      console.log(vecresults);
+
+      // Clear
+      setvecresults(null);
+      setvectors(null);
+    }
+    else if (answers) {
+      setResult(answers);
+      insertRecord(questions,answers)
+      console.log(answers);
+
+      // Clear
+      setquestions(null);
+      setanswers(null);
+    }
+
+     else if (shiftSeven) {
       setResult(shiftSeven2);
+      insertRecord(shiftSeven,shiftSeven2)
       console.log(shiftSeven);
 
       // Clear
@@ -803,6 +887,7 @@ expr = expr.replace(/([a-zA-Z0-9_]+)\s*▶\s*[^)\s]+∠[^)\s]+/g, 'computePolar(
     else if (expressionInput) {
       const result = evaluateExpression(expressionInput);
       setResult(result.toString());
+      insertRecord(expressionInput,result)
       setLastResult(result.toString());
     }
 
@@ -878,7 +963,7 @@ return (
           <Text>Alpha</Text> 
         </TouchableOpacity>
 
-        <TouchableOpacity style={{alignItems:'center',marginLeft:10,backgroundColor:'#D9D9D9', borderRadius:10,height:25,width:50}} onPress={()=>{handleEquals()}}>
+        <TouchableOpacity style={{alignItems:'center',marginLeft:10,backgroundColor:'#D9D9D9', borderRadius:10,height:25,width:50}}>
         <Image source={require('./Assets/leftArrow.png')} style={{height:15,width:15,marginTop:4}}></Image>
         </TouchableOpacity>
 

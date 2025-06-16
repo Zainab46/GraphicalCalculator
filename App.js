@@ -13,7 +13,7 @@ import Shifteight from './Screens/Shifteight';
 import BaseN from './Screens/SimpleMode/Base-N';
 import ShiftTwo from './Screens/ShiftTwo';
 import VectorCalculator from './Screens/SimpleMode/Vector';
-
+import HistoryScreen from './Screens/History';
 
 const Stack= createStackNavigator();
 
@@ -214,6 +214,24 @@ return(
             options={{
               headerShown: true,
               headerTitle: 'Vector',
+              headerStyle: { 
+                backgroundColor: '#434547',  
+              },
+              headerTitleStyle: { 
+                marginLeft: 100, 
+                color: 'white', 
+                fontWeight: 'bold' 
+              },
+              headerTintColor: 'white',
+            }} 
+          />
+
+          <Stack.Screen 
+            name="History" 
+            component={HistoryScreen}
+            options={{
+              headerShown: true,
+              headerTitle: 'History',
               headerStyle: { 
                 backgroundColor: '#434547',  
               },

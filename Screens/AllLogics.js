@@ -1,3 +1,9 @@
+import SQLite from 'react-native-sqlite-storage';
+
+SQLite.enablePromise(true);
+
+const DB_NAME = 'base_converter.db';
+let db;
 // Constants
 export const PI = 3.141592653589793;
 export const E = 2.718281828459045;
@@ -524,3 +530,95 @@ export function parseComplex(str) {
   return [parseFloat(match[1]), parseFloat(match[2])];
 }
 
+//sql working
+
+export const initDB = async () => {
+  try {
+    db = await SQLite.openDatabase({ name: DB_NAME, location: 'default' });
+
+    await db.executeSql(
+      `CREATE TABLE IF NOT EXISTS records (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        expression TEXT NOT NULL,
+        result TEXT NOT NULL
+      );`
+    );
+
+    return db;
+  } catch (error) {
+    console.error('DB init error:', error);
+  }
+};
+
+export const insertRecord = async (expression = null, result = null) => {
+  try {
+    if (expression && !result) {
+      // Save only the expression
+      const results = await db.executeSql('SELECT COUNT(*) AS count FROM records');
+      const count = results[0].rows.item(0).count;
+
+      if (count >= 15) {
+        const first = await db.executeSql('SELECT id FROM records ORDER BY id ASC LIMIT 1');
+        const firstId = first[0].rows.item(0).id;
+
+        await db.executeSql('UPDATE records SET expression = ?, result = NULL WHERE id = ?', [
+          expression,
+          firstId,
+        ]);
+      } else {
+        await db.executeSql('INSERT INTO records (expression) VALUES (?)', [expression]);
+      }
+
+    } else if (!expression && result) {
+      // Save only the result into latest null-result record
+      const res = await db.executeSql(
+        'SELECT id FROM records WHERE result IS NULL ORDER BY id DESC LIMIT 1'
+      );
+
+      if (res[0].rows.length > 0) {
+        const idToUpdate = res[0].rows.item(0).id;
+        await db.executeSql('UPDATE records SET result = ? WHERE id = ?', [result, idToUpdate]);
+      } else {
+        console.warn('No pending expression found to attach result to.');
+      }
+
+    } else if (expression && result) {
+      // Both provided: Normal logic
+      const results = await db.executeSql('SELECT COUNT(*) AS count FROM records');
+      const count = results[0].rows.item(0).count;
+
+      if (count >= 15) {
+        const first = await db.executeSql('SELECT id FROM records ORDER BY id ASC LIMIT 1');
+        const firstId = first[0].rows.item(0).id;
+
+        await db.executeSql('UPDATE records SET expression = ?, result = ? WHERE id = ?', [
+          expression,
+          result,
+          firstId,
+        ]);
+      } else {
+        await db.executeSql('INSERT INTO records (expression, result) VALUES (?, ?)', [
+          expression,
+          result,
+        ]);
+      }
+    }
+  } catch (error) {
+    console.error('Insert/update error:', error);
+  }
+};
+
+export const fetchRecords = async () => {
+  try {
+    const results = await db.executeSql('SELECT * FROM records ORDER BY id ASC');
+    const rows = results[0].rows;
+    let data = [];
+    for (let i = 0; i < rows.length; i++) {
+      data.push(rows.item(i));
+    }
+    return data;
+  } catch (error) {
+    console.error('Fetch error:', error);
+    return [];
+  }
+};

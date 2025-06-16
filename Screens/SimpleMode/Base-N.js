@@ -1,14 +1,20 @@
 import React, { useState } from "react";
-import { View, Text, TouchableOpacity, TextInput, StyleSheet } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-native";
 
 function BaseN({ navigation }) {
-  const [base, setBase] = useState("DEC"); // Current base: BIN, OCT, DEC, HEX
-  const [input, setInput] = useState("");
-  const [operand1, setOperand1] = useState(null);
-  const [operation, setOperation] = useState(null);
-  const [result, setResult] = useState("");
+  const [mode, setMode] = useState("convert"); // convert | logic
+  const [input1, setInput1] = useState("");
+  const [input2, setInput2] = useState("");
+  const [selectedOp, setSelectedOp] = useState("XOR");
+  const [base, setBase] = useState("DEC");
 
-  // Valid characters for each base
+  const baseMap = {
+    BIN: 2,
+    OCT: 8,
+    DEC: 10,
+    HEX: 16,
+  };
+
   const validChars = {
     BIN: "01",
     OCT: "01234567",
@@ -16,219 +22,140 @@ function BaseN({ navigation }) {
     HEX: "0123456789ABCDEF",
   };
 
-  // Convert a number string from given base to decimal
-  const toDecimal = (value, fromBase) => {
-    if (!value) return 0;
-    value = value.toUpperCase();
-    let decimal = 0;
-    for (let char of value) {
-      const digit = fromBase === 16 ? parseInt(char, 16) : parseInt(char, fromBase);
-      decimal = decimal * fromBase + digit;
-    }
-    return decimal;
-  };
-
-  // Convert a decimal number to the target base
-  const fromDecimal = (decimal, toBase) => {
-    if (decimal === 0) return "0";
-    let digits = toBase === 16 ? "0123456789ABCDEF" : "0123456789";
-    let result = "";
-    let num = Math.abs(decimal);
-    while (num > 0) {
-      result = digits[num % toBase] + result;
-      num = Math.floor(num / toBase);
-    }
-    return decimal < 0 ? "-" + result : result;
-  };
-
-  // Validate input based on current base
-  const handleInput = (text) => {
-    if (!text) {
-      setInput("");
-      return;
-    }
+  const handleInput = (text, setter) => {
+    const upper = text.toUpperCase();
     const valid = validChars[base];
-    if (text.split("").every((char) => valid.includes(char.toUpperCase()))) {
-      setInput(text.toUpperCase());
+    if (upper.split("").every((char) => valid.includes(char))) {
+      setter(upper);
     }
   };
 
-  // Handle digit or letter button press
-  const handleDigit = (digit) => {
-    if (validChars[base].includes(digit)) {
-      setInput((prev) => (prev === "0" ? digit : prev + digit));
-    }
-  };
+  const convert = () => {
+    try {
+      const fromBase = baseMap[base];
 
-  // Handle base change
-  const handleBaseChange = (newBase) => {
-    if (input) {
-      const decimal = toDecimal(input, base === "BIN" ? 2 : base === "OCT" ? 8 : base === "DEC" ? 10 : 16);
-      setInput(fromDecimal(decimal, newBase === "BIN" ? 2 : newBase === "OCT" ? 8 : newBase === "DEC" ? 10 : 16));
-    }
-    setBase(newBase);
-    setOperation(null);
-    setOperand1(null);
-    setResult("");
-  };
+      // Convert mode
+      if (mode === "convert") {
+        const decimal = parseInt(input1, fromBase);
+        const result = decimal.toString(fromBase).toUpperCase();
+        const label = `${input1} ${base}`;
+        navigation.navigate("Main", {
+          base: label,
+          baseresult: result,
+        });
+      }
 
-  // Handle arithmetic or logical operation
-  const handleOperation = (op) => {
-    if (input) {
-      const decimal = toDecimal(input, base === "BIN" ? 2 : base === "OCT" ? 8 : base === "DEC" ? 10 : 16);
-      setOperand1(decimal);
-      setOperation(op);
-      setInput("");
-    }
-  };
+      // Logic mode
+      else {
+        const val1 = parseInt(input1, fromBase) >>> 0;
+        const val2 = parseInt(input2, fromBase) >>> 0;
+        let result;
 
-  // Perform calculation
-  const handleEquals = () => {
-    if (!operand1 || !input || !operation) return;
-
-    const decimal2 = toDecimal(input, base === "BIN" ? 2 : base === "OCT" ? 8 : base === "DEC" ? 10 : 16);
-    let resultDecimal;
-
-    // Arithmetic operations
-    if (["+", "-", "×", "÷"].includes(operation)) {
-      if (operation === "+") resultDecimal = operand1 + decimal2;
-      else if (operation === "-") resultDecimal = operand1 - decimal2;
-      else if (operation === "×") resultDecimal = operand1 * decimal2;
-      else if (operation === "÷") {
-        if (decimal2 === 0) {
-          setResult("Error: Division by 0");
-          return;
+        switch (selectedOp) {
+          case "XOR":
+            result = val1 ^ val2;
+            break;
+          case "OR":
+            result = val1 | val2;
+            break;
+          case "AND":
+            result = val1 & val2;
+            break;
+          case "XNOR":
+            result = ~(val1 ^ val2) >>> 0;
+            break;
+          case "NOT":
+            result = ~val1 >>> 0;
+            break;
+          case "NEG":
+            result = (-val1) >>> 0;
+            break;
+          default:
+            result = 0;
         }
-        resultDecimal = Math.floor(operand1 / decimal2); // Integer division
-      }
-    }
-    // Logical operations (bitwise, assume 32-bit integers)
-    else {
-      const op1 = operand1 >>> 0; // Convert to unsigned 32-bit
-      const op2 = decimal2 >>> 0;
-      if (operation === "AND") resultDecimal = op1 & op2;
-      else if (operation === "OR") resultDecimal = op1 | op2;
-      else if (operation === "XOR") resultDecimal = op1 ^ op2;
-      else if (operation === "XNOR") resultDecimal = ~(op1 ^ op2) >>> 0;
-      else if (operation === "NOT") {
-        resultDecimal = ~op1 >>> 0;
-        setInput("");
-        setOperand1(null);
-        setOperation(null);
-      }
-      else if (operation === "NEG") {
-        resultDecimal = (-op1) >>> 0;
-        setInput("");
-        setOperand1(null);
-        setOperation(null);
-      }
-    }
 
-    if (resultDecimal !== undefined) {
-      const resultStr = fromDecimal(resultDecimal, base === "BIN" ? 2 : base === "OCT" ? 8 : base === "DEC" ? 10 : 16);
-      setResult(resultStr);
-      setInput(resultStr);
-      setOperand1(null);
-      setOperation(null);
+        const output = result.toString(fromBase).toUpperCase();
+        const label =
+          selectedOp === "NOT" || selectedOp === "NEG"
+            ? `${selectedOp} ${input1}`
+            : `${input1} ${selectedOp} ${input2}`;
+
+        navigation.navigate("Main", {
+          base: label,
+          baseresult: output,
+        });
+      }
+    } catch (err) {
+      alert("Invalid input for selected base");
     }
   };
-
-  // Clear all
-  const handleClear = () => {
-    setInput("");
-    setOperand1(null);
-    setOperation(null);
-    setResult("");
-  };
-
-  // Button layout
-  const buttons = [
-    [
-      { label: "C", onPress: handleClear, style: styles.clearButton },
-      { label: "NOT", onPress: () => handleOperation("NOT"), style: styles.opButton },
-      { label: "NEG", onPress: () => handleOperation("NEG"), style: styles.opButton },
-      { label: "÷", onPress: () => handleOperation("÷"), style: styles.opButton },
-    ],
-    [
-      { label: "A", onPress: () => handleDigit("A"), disabled: base !== "HEX" },
-      { label: "B", onPress: () => handleDigit("B"), disabled: base !== "HEX" },
-      { label: "AND", onPress: () => handleOperation("AND"), style: styles.opButton },
-      { label: "×", onPress: () => handleOperation("×"), style: styles.opButton },
-    ],
-    [
-      { label: "C", onPress: () => handleDigit("C"), disabled: base !== "HEX" },
-      { label: "D", onPress: () => handleDigit("D"), disabled: base !== "HEX" },
-      { label: "OR", onPress: () => handleOperation("OR"), style: styles.opButton },
-      { label: "-", onPress: () => handleOperation("-"), style: styles.opButton },
-    ],
-    [
-      { label: "E", onPress: () => handleDigit("E"), disabled: base !== "HEX" },
-      { label: "F", onPress: () => handleDigit("F"), disabled: base !== "HEX" },
-      { label: "XOR", onPress: () => handleOperation("XOR"), style: styles.opButton },
-      { label: "+", onPress: () => handleOperation("+"), style: styles.opButton },
-    ],
-    [
-      { label: "7", onPress: () => handleDigit("7"), disabled: base === "BIN" || base === "OCT" },
-      { label: "8", onPress: () => handleDigit("8"), disabled: base === "BIN" },
-      { label: "9", onPress: () => handleDigit("9"), disabled: base === "BIN" },
-      { label: "XNOR", onPress: () => handleOperation("XNOR"), style: styles.opButton },
-    ],
-    [
-      { label: "4", onPress: () => handleDigit("4"), disabled: base === "BIN" },
-      { label: "5", onPress: () => handleDigit("5"), disabled: base === "BIN" },
-      { label: "6", onPress: () => handleDigit("6"), disabled: base === "BIN" },
-      { label: "=", onPress: handleEquals, style: styles.equalsButton },
-    ],
-    [
-      { label: "1", onPress: () => handleDigit("1") },
-      { label: "2", onPress: () => handleDigit("2"), disabled: base === "BIN" },
-      { label: "3", onPress: () => handleDigit("3"), disabled: base === "BIN" },
-      { label: "0", onPress: () => handleDigit("0") },
-    ],
-  ];
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>BASE-N Calculator</Text>
-      <View style={styles.display}>
-        <Text style={styles.baseLabel}>{base}</Text>
-        <TextInput
-          style={styles.input}
-          value={input || result || "0"}
-          onChangeText={handleInput}
-          placeholder="0"
-          placeholderTextColor="#888"
-          keyboardType="default"
-          autoCapitalize="characters"
-        />
-      </View>
-      <View style={styles.baseButtons}>
-        {["BIN", "OCT", "DEC", "HEX"].map((b) => (
+      <Text style={styles.title}>Base-N Calculator</Text>
+
+      <View style={styles.modeRow}>
+        {["convert", "logic"].map((m) => (
           <TouchableOpacity
-            key={b}
-            style={[styles.baseButton, base === b && styles.selectedBaseButton]}
-            onPress={() => handleBaseChange(b)}
+            key={m}
+            style={[styles.modeButton, mode === m && styles.selected]}
+            onPress={() => setMode(m)}
           >
-            <Text style={styles.baseButtonText}>{b}</Text>
+            <Text style={styles.baseText}>{m.toUpperCase()}</Text>
           </TouchableOpacity>
         ))}
       </View>
-      <View style={styles.buttonGrid}>
-        {buttons.map((row, rowIndex) => (
-          <View key={rowIndex} style={styles.buttonRow}>
-            {row.map((btn, btnIndex) => (
-              <TouchableOpacity
-                key={btn.label}
-                style={[styles.button, btn.style, btn.disabled && styles.disabledButton]}
-                onPress={btn.onPress}
-                disabled={btn.disabled}
-              >
-                <Text style={styles.buttonText}>{btn.label}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+
+      <View style={styles.row}>
+        <Text style={styles.label}>Base:</Text>
+        {["BIN", "OCT", "DEC", "HEX"].map((b) => (
+          <TouchableOpacity
+            key={b}
+            style={[styles.baseButton, base === b && styles.selected]}
+            onPress={() => setBase(b)}
+          >
+            <Text style={styles.baseText}>{b}</Text>
+          </TouchableOpacity>
         ))}
       </View>
+
+      <TextInput
+        style={styles.input}
+        value={input1}
+        onChangeText={(text) => handleInput(text, setInput1)}
+        placeholder={`Enter first ${base} value`}
+        placeholderTextColor="#888"
+        autoCapitalize="characters"
+      />
+
+      {mode === "logic" && selectedOp !== "NOT" && selectedOp !== "NEG" && (
+        <TextInput
+          style={styles.input}
+          value={input2}
+          onChangeText={(text) => handleInput(text, setInput2)}
+          placeholder={`Enter second ${base} value`}
+          placeholderTextColor="#888"
+          autoCapitalize="characters"
+        />
+      )}
+
+      {mode === "logic" && (
+        <View style={styles.row}>
+          {["XOR", "OR", "AND", "XNOR", "NOT", "NEG"].map((op) => (
+            <TouchableOpacity
+              key={op}
+              style={[styles.opButton, selectedOp === op && styles.selected]}
+              onPress={() => setSelectedOp(op)}
+            >
+              <Text style={styles.baseText}>{op}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+
+      <TouchableOpacity style={styles.calculateButton} onPress={convert}>
+        <Text style={styles.calculateText}>Calculate</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -237,94 +164,74 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#222",
-    paddingTop: 20,
+    padding: 20,
+    justifyContent: "center",
   },
-  header: {
-    fontSize: 22,
-    fontWeight: "bold",
-    textAlign: "center",
+  title: {
+    fontSize: 24,
     color: "white",
-    marginBottom: 10,
-  },
-  display: {
-    width: "90%",
-    alignSelf: "center",
-    backgroundColor: "#333",
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 10,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  baseLabel: {
-    fontSize: 18,
-    color: "#0f0",
-    width: 50,
+    marginBottom: 20,
     textAlign: "center",
   },
   input: {
-    flex: 1,
-    fontSize: 24,
+    backgroundColor: "#333",
     color: "white",
-    textAlign: "right",
+    fontSize: 20,
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 20,
   },
-  baseButtons: {
+  row: {
     flexDirection: "row",
-    justifyContent: "space-around",
-    marginBottom: 10,
+    flexWrap: "wrap",
+    marginBottom: 15,
+    alignItems: "center",
+  },
+  modeRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginBottom: 15,
+  },
+  modeButton: {
+    backgroundColor: "#444",
+    padding: 10,
+    marginHorizontal: 10,
+    borderRadius: 6,
+  },
+  label: {
+    color: "#fff",
+    fontSize: 18,
+    marginRight: 10,
   },
   baseButton: {
-    backgroundColor: "#434547",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: "#83888d",
+    backgroundColor: "#444",
+    padding: 10,
+    margin: 5,
+    borderRadius: 6,
   },
-  selectedBaseButton: {
-    backgroundColor: "#56585a",
+  selected: {
+    backgroundColor: "#0af",
   },
-  baseButtonText: {
-    fontSize: 16,
+  baseText: {
     color: "white",
-    fontWeight: "bold",
-  },
-  buttonGrid: {
-    width: "90%",
-    alignSelf: "center",
-    flex: 1,
-  },
-  buttonRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 10,
-  },
-  button: {
-    backgroundColor: "#434547",
-    width: "22%",
-    aspectRatio: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#83888d",
-  },
-  clearButton: {
-    backgroundColor: "#FF3B30",
+    fontSize: 16,
   },
   opButton: {
-    backgroundColor: "#FF9500",
+    backgroundColor: "#444",
+    padding: 10,
+    margin: 5,
+    borderRadius: 6,
   },
-  equalsButton: {
-    backgroundColor: "#007AFF",
+  calculateButton: {
+    backgroundColor: "#28a745",
+    padding: 15,
+    borderRadius: 8,
+    marginTop: 20,
+    alignItems: "center",
   },
-  disabledButton: {
-    backgroundColor: "#555",
-    opacity: 0.5,
-  },
-  buttonText: {
-    fontSize: 18,
+  calculateText: {
     color: "white",
+    fontSize: 18,
     fontWeight: "bold",
   },
 });

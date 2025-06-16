@@ -8,7 +8,6 @@ function Shifteight({ navigation }) {
   const [result, setResult] = useState("");
 
   const conversionFactors = {
-    
     "in ▶ cm": 2.54, 
     "cm ▶ in": 1 / 2.54,
     "ft ▶ m": 0.3048, 
@@ -21,23 +20,18 @@ function Shifteight({ navigation }) {
     "m ▶ n mile": 1 / 1852,
     "pc ▶ km": 3.085677581e13, 
     "km ▶ pc": 1 / 3.085677581e13,
- 
     "acre ▶ m²": 4046.8564224,
     "m² ▶ acre": 1 / 4046.8564224,
-
     "gal(US) ▶ L": 3.785411784, 
     "L ▶ gal(US)": 1 / 3.785411784,
     "gal(UK) ▶ L": 4.54609, 
     "L ▶ gal(UK)": 1 / 4.54609,
- 
     "km/h ▶ m/s": 1000 / 3600, 
     "m/s ▶ km/h": 3600 / 1000,
-
     "oz ▶ g": 28.349523125, 
     "g ▶ oz": 1 / 28.349523125,
     "lb ▶ kg": 0.45359237, 
     "kg ▶ lb": 1 / 0.45359237,
-   
     "atm ▶ Pa": 101325, 
     "Pa ▶ atm": 1 / 101325,
     "mmHg ▶ Pa": 133.322387415, 
@@ -46,10 +40,8 @@ function Shifteight({ navigation }) {
     "kPa ▶ lbf/in²": 1 / 6.894757293,
     "kgf/cm² ▶ Pa": 98066.5, 
     "Pa ▶ kgf/cm²": 1 / 98066.5,
-   
     "hp ▶ kW": 0.745699872, 
     "kW ▶ hp": 1 / 0.745699872,
-   
     "kgf·m ▶ J": 9.80665, 
     "J ▶ kgf·m": 1 / 9.80665,
     "J ▶ cal": 1 / 4.184, 
@@ -68,25 +60,28 @@ function Shifteight({ navigation }) {
 
     const value = parseFloat(inputValue);
     const name = selectedConversion.name;
+    let resultValue;
+    let resultText;
 
     if (name === "°F ▶ °C") {
-     
-      const resultValue = ((value - 32) * 5) / 9;
-      setResult(`${value} °F = ${resultValue.toFixed(4)} °C`);
+      resultValue = ((value - 32) * 5) / 9;
+      resultText = `${value} °F = ${resultValue.toFixed(4)} °C`;
     } else if (name === "°C ▶ °F") {
-      
-      const resultValue = (value * 9) / 5 + 32;
-      setResult(`${value} °C = ${resultValue.toFixed(4)} °F`);
+      resultValue = (value * 9) / 5 + 32;
+      resultText = `${value} °C = ${resultValue.toFixed(4)} °F`;
     } else {
-      
       const factor = conversionFactors[name];
       if (factor) {
-        const resultValue = value * factor;
-        setResult(`${value} ${name.split(" ▶ ")[0]} = ${resultValue.toFixed(4)} ${name.split(" ▶ ")[1]}`);
+        resultValue = value * factor;
+        resultText = `${value} ${name.split(" ▶ ")[0]} = ${resultValue.toFixed(4)} ${name.split(" ▶ ")[1]}`;
       } else {
-        setResult("Conversion not supported");
+        resultText = "Conversion not supported";
       }
     }
+
+    setResult(resultText);
+    const questionText = `${value} ${name}`;
+    navigation.navigate('Main', { question: questionText, answer: resultText });
   };
 
   const showconversions = ({ item }) => {
@@ -116,12 +111,13 @@ function Shifteight({ navigation }) {
             value={inputValue}
             onChangeText={setInputValue}
           />
+
           <TouchableOpacity style={styles.convertButton} onPress={handleConversion}>
             <Text style={styles.buttonText}>Convert</Text>
           </TouchableOpacity>
         </View>
       )}
-      {result ? <Text style={styles.resultText}>{result}</Text> : null}
+      
       <FlatList
         data={modes.shifteight}
         renderItem={showconversions}
