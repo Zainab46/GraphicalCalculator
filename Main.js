@@ -1,6 +1,5 @@
 import React, {useState, useEffect, useRef} from "react";
 import { View, SafeAreaView, TextInput, StyleSheet, TouchableOpacity, Text, Image} from "react-native";
-import HyperbolicMenu from "./HyperbolicMenu";
 import { factorial , PI,E,abs,sqrt, div_mul, divide, cbrt, square, cube, x_yrt,
   makeNegative, computeLog10, computeLn,computeLogBase, 
   computeSummation,taylorSin,taylorTan,taylorCos,taylorAsin,taylorAcos,taylorAtan,
@@ -383,7 +382,7 @@ if(shift===true&& variable=='c'&& alpha===false ){
 HandleVariables(variable);
 }
 else if(shift===false && variable==='c' && alpha===false){    
-navigation.navigate(HyperbolicMenu);
+navigation.navigate('HyperbolicMenu');
 }
 else if(shift===false && variable==='c' && alpha===true){
   HandleVariables(variable)
