@@ -1498,7 +1498,8 @@ const ss = StyleSheet.create({
     height: 80,
     backgroundColor: '#D3EBD3',
     borderBottomEndRadius: 10,
-    fontSize: 16
+    fontSize: 24,
+    fontWeight:'bold'
   },
   modebtn: {
     backgroundColor: '#343A46',
