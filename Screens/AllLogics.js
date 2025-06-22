@@ -214,51 +214,51 @@ export const floor = (x) => {
 };
 
 // Sine function using T  aylor series (for better accuracy with more terms)
-export const taylorSin = (x) => {
-  x = normalizeAngle(x);
-  let sum = 0;
-  let term = x;
-  let n = 0;
+// export const taylorSin = (x) => {
+//   x = normalizeAngle(x);
+//   let sum = 0;
+//   let term = x;
+//   let n = 0;
   
-  while (Math.abs(term) > 1e-15 && n < 20) {
-    sum += term;
-    n++;
-    term *= -x * x / ((2 * n) * (2 * n + 1));
-  }
-  return sum;
-};
+//   while (Math.abs(term) > 1e-15 && n < 20) {
+//     sum += term;
+//     n++;
+//     term *= -x * x / ((2 * n) * (2 * n + 1));
+//   }
+//   return sum;
+// };
 
 // Cosine function using Taylor series (with more terms for better accuracy)
-export const taylorCos = (x) => {
-  x = normalizeAngle(x);
-  let sum = 1;
-  let term = 1;
-  let n = 0;
+// export const taylorCos = (x) => {
+//   x = normalizeAngle(x);
+//   let sum = 1;
+//   let term = 1;
+//   let n = 0;
   
-  while (Math.abs(term) > 1e-15 && n < 20) {
-    n++;
-    term *= -x * x / ((2 * n - 1) * (2 * n));
-    sum += term;
-  }
-  return sum;
-};
+//   while (Math.abs(term) > 1e-15 && n < 20) {
+//     n++;
+//     term *= -x * x / ((2 * n - 1) * (2 * n));
+//     sum += term;
+//   }
+//   return sum;
+// };
 
 // Tangent function using sine and cosine
-export const taylorTan = (x) => {
-  // Check for values close to π/2 + nπ where tangent is undefined
-  const normalized = normalizeAngle(x);
-  if (Math.abs(Math.abs(normalized) - PI/2) < 1e-10) {
-    return Infinity * Math.sign(normalized);
-  }
+// export const taylorTan = (x) => {
+//   // Check for values close to π/2 + nπ where tangent is undefined
+//   const normalized = normalizeAngle(x);
+//   if (Math.abs(Math.abs(normalized) - PI/2) < 1e-10) {
+//     return Infinity * Math.sign(normalized);
+//   }
   
-  const sinVal = taylorSin(x);
-  const cosVal = taylorCos(x);
+//   const sinVal = taylorSin(x);
+//   const cosVal = taylorCos(x);
   
-  if (Math.abs(cosVal) < 1e-10) {
-    return Infinity * Math.sign(sinVal);
-  }
-  return sinVal / cosVal;
-};
+//   if (Math.abs(cosVal) < 1e-10) {
+//     return Infinity * Math.sign(sinVal);
+//   }
+//   return sinVal / cosVal;
+// };
 
 // Arc sine function improved implementation
 export const taylorAsin = (x) => {
@@ -376,6 +376,9 @@ export const taylorAtanh = (x) => {
   return 0.5 * computeLn((1 + x) / (1 - x));
 };
 
+export const taylorCos = (x) => Math.cos(x);
+export const taylorTan = (x) => Math.tan(x);
+
 export function dmsToDecimal(dmsString) {
   const parts = dmsString
     .split('°')
@@ -410,74 +413,7 @@ export function dmsToDecimal(dmsString) {
 }
 
 // Numerical differentiation using central difference method
-export const computeDerivative = (fx, x0) => {
-  try {
-    // If x0 is not provided, default to x = 0
-    x0 = x0 ? evaluateExpression(x0) : 0;
-    if (isNaN(x0)) return "Error: Invalid evaluation point";
-
-    // Small step size for numerical differentiation
-    const h = 0.0001; // Adjust for precision
-
-    // Central difference: (f(x0+h) - f(x0-h)) / (2h)
-    let fxPlusH = fx.replace(/\bx\b/g, `(${x0 + h})`);
-    let fxMinusH = fx.replace(/\bx\b/g, `(${x0 - h})`);
-
-    fxPlusH = evaluateExpression(fxPlusH);
-    fxMinusH = evaluateExpression(fxMinusH);
-
-    if (isNaN(fxPlusH) || isNaN(fxMinusH)) return "Error: Invalid function";
-
-    const result = (fxPlusH - fxMinusH) / (2 * h);
-    return result;
-  } catch (error) {
-    console.error("Differentiation error:", error);
-    return "Error";
-  }
-};
-
-
-// Numerical integration using Simpson's 1/3 rule
-export const computeIntegration = (a, b, fx) => {
-  try {
-    // Evaluate a and b
-    a = evaluateExpression(a);
-    b = evaluateExpression(b);
-    if (isNaN(a) || isNaN(b)) return "Error: Invalid bounds";
-
-    // Number of intervals (must be even for Simpson's rule)
-    const n = 1000; // Adjust for precision
-    if (n % 2 !== 0) throw new Error("Number of intervals must be even");
-
-    const h = (b - a) / n;
-    let sum = 0;
-
-    // Evaluate f(x) at each point
-    for (let i = 0; i <= n; i++) {
-      const x = a + i * h;
-      // Replace 'x' in fx with the current x value
-      let fxi = fx.replace(/\bx\b/g, `(${x})`);
-      fxi = evaluateExpression(fxi);
-      if (isNaN(fxi)) return "Error: Invalid integrand";
-
-      // Simpson's rule coefficients
-      if (i === 0 || i === n) {
-        sum += fxi;
-      } else if (i % 2 === 0) {
-        sum += 2 * fxi;
-      } else {
-        sum += 4 * fxi;
-      }
-    }
-
-    // Compute final result
-    const result = (h / 3) * sum;
-    return result;
-  } catch (error) {
-    console.error("Integration error:", error);
-    return "Error";
-  }
-};
+export const taylorSin = (x) => Math.sin(x);
 
 //arg
 export function computeArg(z) {
@@ -622,3 +558,283 @@ export const fetchRecords = async () => {
     return [];
   }
 };
+
+
+export function computeIntegration(a, b, functionExpr) {
+  try {
+    console.log(`Integration input: a=${a}, b=${b}, function=${functionExpr}`);
+    
+    // Parse bounds
+    const lowerBound = parseFloat(a);
+    const upperBound = parseFloat(b);
+    
+    if (isNaN(lowerBound) || isNaN(upperBound)) {
+      return "Error: Invalid bounds";
+    }
+
+    // Clean and prepare the function expression
+    let cleanExpr = functionExpr.toString().trim();
+    console.log(`Original expression: ${cleanExpr}`);
+    
+    // Handle superscript numbers (X², X³, etc.)
+    cleanExpr = cleanExpr.replace(/X²/g, 'x**2');
+    cleanExpr = cleanExpr.replace(/X³/g, 'x**3');
+    cleanExpr = cleanExpr.replace(/x²/g, 'x**2');
+    cleanExpr = cleanExpr.replace(/x³/g, 'x**3');
+    
+    // Replace common mathematical operators and functions
+    cleanExpr = cleanExpr.replace(/X/g, 'x');
+    cleanExpr = cleanExpr.replace(/\^/g, '**');
+    
+    // Handle trigonometric functions - be more specific with replacements
+    cleanExpr = cleanExpr.replace(/\bsin\(/g, 'Math.sin(');
+    cleanExpr = cleanExpr.replace(/\bcos\(/g, 'Math.cos(');
+    cleanExpr = cleanExpr.replace(/\btan\(/g, 'Math.tan(');
+    cleanExpr = cleanExpr.replace(/\bexp\(/g, 'Math.exp(');
+    cleanExpr = cleanExpr.replace(/\bsqrt\(/g, 'Math.sqrt(');
+    cleanExpr = cleanExpr.replace(/\babs\(/g, 'Math.abs(');
+    
+    // Handle standalone sin, cos, tan without parentheses
+    cleanExpr = cleanExpr.replace(/\bsin\b(?!\()/g, 'Math.sin');
+    cleanExpr = cleanExpr.replace(/\bcos\b(?!\()/g, 'Math.cos');
+    cleanExpr = cleanExpr.replace(/\btan\b(?!\()/g, 'Math.tan');
+    
+    // Handle logarithmic functions
+    cleanExpr = cleanExpr.replace(/\blog\(/g, 'Math.log10(');
+    cleanExpr = cleanExpr.replace(/\bln\(/g, 'Math.log(');
+    
+    // Handle constants
+    cleanExpr = cleanExpr.replace(/\bPI\b/g, 'Math.PI');
+    cleanExpr = cleanExpr.replace(/\bE\b/g, 'Math.E');
+    
+    console.log(`Cleaned expression: ${cleanExpr}`);
+
+    // Create a function from the expression
+    const f = new Function('x', `return ${cleanExpr};`);
+    
+    // Test the function with a sample value
+    const testValue = (lowerBound + upperBound) / 2;
+    const testResult = f(testValue);
+    console.log(`Test evaluation at x=${testValue}: ${testResult}`);
+    
+    if (isNaN(testResult) || !isFinite(testResult)) {
+      return "Error: Invalid function result";
+    }
+
+    // Simpson's Rule for numerical integration
+    const n = 1000; // Number of intervals (must be even)
+    const h = (upperBound - lowerBound) / n;
+    
+    let sum = f(lowerBound) + f(upperBound);
+    
+    // Add the odd-indexed terms (multiply by 4)
+    for (let i = 1; i < n; i += 2) {
+      sum += 4 * f(lowerBound + i * h);
+    }
+    
+    // Add the even-indexed terms (multiply by 2)
+    for (let i = 2; i < n; i += 2) {
+      sum += 2 * f(lowerBound + i * h);
+    }
+    
+    const result = (h / 3) * sum;
+    console.log(`Integration result: ${result}`);
+    return isFinite(result) ? result : "Error: Integration failed";
+    
+  } catch (error) {
+    console.error("Integration error:", error);
+    return "Error: " + error.message;
+  }
+}
+
+// Enhanced Differentiation Function
+export function computeDerivative(functionExpr, x0 = null) {
+  try {
+    // Clean and prepare the function expression
+    let cleanExpr = functionExpr.toString().trim();
+    
+    // Replace common mathematical operators and functions
+    cleanExpr = cleanExpr.replace(/X/g, 'x');
+    cleanExpr = cleanExpr.replace(/\^/g, '**');
+    cleanExpr = cleanExpr.replace(/sin/g, 'Math.sin');
+    cleanExpr = cleanExpr.replace(/cos/g, 'Math.cos');
+    cleanExpr = cleanExpr.replace(/tan/g, 'Math.tan');
+    cleanExpr = cleanExpr.replace(/log/g, 'Math.log10');
+    cleanExpr = cleanExpr.replace(/ln/g, 'Math.log');
+    cleanExpr = cleanExpr.replace(/sqrt/g, 'Math.sqrt');
+    cleanExpr = cleanExpr.replace(/exp/g, 'Math.exp');
+    cleanExpr = cleanExpr.replace(/abs/g, 'Math.abs');
+    cleanExpr = cleanExpr.replace(/PI/g, 'Math.PI');
+    cleanExpr = cleanExpr.replace(/E/g, 'Math.E');
+
+    // Create a function from the expression
+    const f = new Function('x', `return ${cleanExpr};`);
+    
+    if (x0 !== null) {
+      // Numerical derivative at specific point using central difference
+      const point = parseFloat(x0);
+      if (isNaN(point)) {
+        return "Error: Invalid point";
+      }
+      
+      const h = 1e-8; // Small step size
+      const derivative = (f(point + h) - f(point - h)) / (2 * h);
+      
+      return isFinite(derivative) ? derivative : "Error: Derivative undefined";
+    } else {
+      // Return a function that computes derivative at any point
+      return function(x) {
+        const point = parseFloat(x);
+        if (isNaN(point)) return NaN;
+        
+        const h = 1e-8;
+        return (f(point + h) - f(point - h)) / (2 * h);
+      };
+    }
+    
+  } catch (error) {
+    console.error("Differentiation error:", error);
+    return "Error: " + error.message;
+  }
+}
+
+// Advanced Integration with multiple methods
+export function advancedIntegration(a, b, functionExpr, method = 'simpson') {
+  try {
+    const lowerBound = parseFloat(a);
+    const upperBound = parseFloat(b);
+    
+    if (isNaN(lowerBound) || isNaN(upperBound)) {
+      return "Error: Invalid bounds";
+    }
+
+    let cleanExpr = functionExpr.toString().trim();
+    cleanExpr = cleanExpr.replace(/X/g, 'x');
+    cleanExpr = cleanExpr.replace(/\^/g, '**');
+    cleanExpr = cleanExpr.replace(/sin/g, 'Math.sin');
+    cleanExpr = cleanExpr.replace(/cos/g, 'Math.cos');
+    cleanExpr = cleanExpr.replace(/tan/g, 'Math.tan');
+    cleanExpr = cleanExpr.replace(/log/g, 'Math.log10');
+    cleanExpr = cleanExpr.replace(/ln/g, 'Math.log');
+    cleanExpr = cleanExpr.replace(/sqrt/g, 'Math.sqrt');
+    cleanExpr = cleanExpr.replace(/exp/g, 'Math.exp');
+    cleanExpr = cleanExpr.replace(/abs/g, 'Math.abs');
+    cleanExpr = cleanExpr.replace(/PI/g, 'Math.PI');
+    cleanExpr = cleanExpr.replace(/E/g, 'Math.E');
+
+    const f = new Function('x', `return ${cleanExpr};`);
+    
+    switch (method.toLowerCase()) {
+      case 'simpson':
+        return simpsonRule(f, lowerBound, upperBound);
+      case 'trapezoidal':
+        return trapezoidalRule(f, lowerBound, upperBound);
+      case 'romberg':
+        return rombergIntegration(f, lowerBound, upperBound);
+      default:
+        return simpsonRule(f, lowerBound, upperBound);
+    }
+    
+  } catch (error) {
+    return "Error: " + error.message;
+  }
+}
+
+// Simpson's Rule implementation
+function simpsonRule(f, a, b, n = 1000) {
+  if (n % 2 !== 0) n++; // Ensure n is even
+  
+  const h = (b - a) / n;
+  let sum = f(a) + f(b);
+  
+  for (let i = 1; i < n; i += 2) {
+    sum += 4 * f(a + i * h);
+  }
+  
+  for (let i = 2; i < n; i += 2) {
+    sum += 2 * f(a + i * h);
+  }
+  
+  return (h / 3) * sum;
+}
+
+// Trapezoidal Rule implementation
+function trapezoidalRule(f, a, b, n = 1000) {
+  const h = (b - a) / n;
+  let sum = (f(a) + f(b)) / 2;
+  
+  for (let i = 1; i < n; i++) {
+    sum += f(a + i * h);
+  }
+  
+  return h * sum;
+}
+
+// Romberg Integration (more accurate)
+function rombergIntegration(f, a, b, maxSteps = 10) {
+  const R = [];
+  const h = b - a;
+  
+  // Initialize first column
+  R[0] = [h * (f(a) + f(b)) / 2];
+  
+  for (let i = 1; i <= maxSteps; i++) {
+    // Composite trapezoidal rule
+    const step = h / Math.pow(2, i);
+    let sum = 0;
+    
+    for (let j = 1; j <= Math.pow(2, i-1); j++) {
+      sum += f(a + (2*j - 1) * step);
+    }
+    
+    R[i] = [R[i-1][0] / 2 + step * sum];
+    
+    // Richardson extrapolation
+    for (let j = 1; j <= i; j++) {
+      const factor = Math.pow(4, j);
+      R[i][j] = (factor * R[i][j-1] - R[i-1][j-1]) / (factor - 1);
+    }
+  }
+  
+  return R[maxSteps][maxSteps];
+}
+
+// Symbolic differentiation for common functions
+function symbolicDerivative(functionExpr) {
+  let expr = functionExpr.toString().trim();
+  
+  // Simple symbolic differentiation rules
+  const rules = {
+    // Power rule: x^n -> n*x^(n-1)
+    'x\\*\\*([0-9]+)': (match, n) => {
+      const power = parseInt(n);
+      if (power === 1) return '1';
+      if (power === 2) return '2*x';
+      return `${power}*x**(${power-1})`;
+    },
+    
+    // Trigonometric functions
+    'Math\\.sin\\(x\\)': 'Math.cos(x)',
+    'Math\\.cos\\(x\\)': '-Math.sin(x)',
+    'Math\\.tan\\(x\\)': '1/(Math.cos(x)**2)',
+    
+    // Exponential and logarithmic
+    'Math\\.exp\\(x\\)': 'Math.exp(x)',
+    'Math\\.log\\(x\\)': '1/x',
+    'Math\\.log10\\(x\\)': '1/(x*Math.log(10))',
+    
+    // Constants
+    '^[0-9\\.]+$': '0',
+    '^x$': '1'
+  };
+  
+  for (const [pattern, replacement] of Object.entries(rules)) {
+    if (typeof replacement === 'function') {
+      expr = expr.replace(new RegExp(pattern, 'g'), replacement);
+    } else {
+      expr = expr.replace(new RegExp(pattern, 'g'), replacement);
+    }
+  }
+  
+  return expr;
+}

@@ -5,7 +5,13 @@ import { factorial , PI,E,abs,sqrt, div_mul, divide, cbrt, square, cube, x_yrt,
   makeNegative, computeLog10, computeLn,computeLogBase, 
   computeSummation,taylorSin,taylorTan,taylorCos,taylorAsin,taylorAcos,taylorAtan,
 taylorSinh,taylorCosh,taylorTanh,taylorAsinh,taylorAcosh,taylorAtanh,
-computeArg,computecongj,compute_abi,computePolar,parseComplex,computeDerivative,computeIntegration,initDB,insertRecord} from "./Screens/AllLogics";
+computeArg,computecongj,compute_abi,computePolar,parseComplex,initDB,insertRecord,computeIntegration,computeDerivative,advancedIntegration,symbolicDerivative} from "./Screens/AllLogics";
+
+
+
+
+
+
 
 
 
@@ -39,6 +45,7 @@ function Main({navigation,ActualMode,setActualMode,route}){
   const [vecresults, setvecresults] = useState(route?.params?.vecresult??null);
   const [bases, setbases] = useState(route?.params?.base??null);
   const [baseresults, setbaseresults] = useState(route?.params?.baseresult??null);
+  const [graphcount,setgraphcount]=useState(0)
   
  
 
@@ -628,24 +635,24 @@ else if (questions !== null && answers !== null) {
 }
 
 
-const handle_integration_and_derivation=()=>{
-  if (shift===false){
-    const currentPos = cursorPosition !== null ? cursorPosition : expressionInput.length;
-    const newExpression = expressionInput.substring(0, currentPos) + '∫(a,b,f(x),dx)' + 
-                         expressionInput.substring(currentPos);
-  setExpressionInput(newExpression);
-   setFirstPlaceholderPosition(currentPos + 6);
-  setCursorPosition(currentPos + 3); 
+const handle_integration_and_derivation = () => {
+  const currentPos = cursorPosition !== null ? cursorPosition : expressionInput.length;
+
+  if (!shift) {
+    const newExpression = expressionInput.substring(0, currentPos) + '∫(a,b,f(x),dx)' +
+                          expressionInput.substring(currentPos);
+    setExpressionInput(newExpression);
+    setFirstPlaceholderPosition(currentPos + 6);
+    setCursorPosition(currentPos + 3);
+  } else {
+    const newExpression = expressionInput.substring(0, currentPos) + 'd/dx(f(x),x0)' +
+                          expressionInput.substring(currentPos);
+    setExpressionInput(newExpression);
+    setFirstPlaceholderPosition(currentPos + 6);
+    setCursorPosition(currentPos + 3);
   }
-  else if (shift===true){
-const currentPos = cursorPosition !== null ? cursorPosition : expressionInput.length;
-    const newExpression = expressionInput.substring(0, currentPos) + 'd/dx(f(x),x0)' + 
-                         expressionInput.substring(currentPos);
-  setExpressionInput(newExpression);
-   setFirstPlaceholderPosition(currentPos + 6);
-  setCursorPosition(currentPos + 3); 
-  }
-}
+};
+
 
   // Find if the expression ends with a special token
   const findSpecialToken = (expression) => {
@@ -695,145 +702,118 @@ if(lastresult){
 
 }
 }
-const evaluateExpression = (expr) => {
 
-   if (expr.includes('∑(')) {
+
+const evaluateExpression = (expr) => {
+  console.log(`Original expression: ${expr}`);
+  
+  if (expr.includes('∑(')) {
     const result = handleSummation(expr);
     if (result !== null) return result;
   }
 
-  // Replace operators for JavaScript evaluation
-  expr = expr.replace(/X/g, '*');
-  expr = expr.replace(/÷/g, '/');
-  expr = expr.replace(/\^/g, '**');
+  // Handle integration BEFORE other replacements - improved regex
+  expr = expr.replace(/∫\(([^,]+),([^,]+),([^,]+),dx\)/g, (match, a, b, fx) => {
+    console.log(`Integration match: a=${a}, b=${b}, fx=${fx}`);
+    return `computeIntegration(${a}, ${b}, "${fx}")`;
+  });
 
-  // Handle factorial e.g., 5! => factorial(5)
-  expr = expr.replace(/(\d+|\([^()]*\))\s*!/g, 'factorial($1)');
-
-  
-
-  // Handle x⁻¹ => 1/x or (expr)⁻¹ => 1/(expr)
-  expr = expr.replace(/(\d+|\([^()]*\))⁻¹/g, '(1/($1))');
-
-  // Handle division e.g., a / b => divide(a, b)
-expr = expr.replace(/(\w+|\([^()]*\))\s*\/\s*(\w+|\([^()]*\))/g, 'divide($1, $2)');
-
-// Handle expressions like x*(y/z) => multiply(x, divide(y, z))
-expr = expr.replace(/(\w+)\s*\*\s*\(\s*(\w+)\s*\/\s*(\w+)\s*\)/g, 'multiply($1, divide($2, $3))');
-
- // Handle special functions
-  expr = expr.replace(/√(\d+|\([^()]*\))/g, 'sqrt($1)');
-
-  //handle cube root
-  expr = expr.replace(/∛\s*(\w+|\([^()]*\))/g, 'cbrt($1)');
-
- // Handle x² 
-expr = expr.replace(/(\w+|\([^()]*\))²/g, 'square($1)');
-
-// Handle x³
-expr = expr.replace(/(\w+|\([^()]*\))³/g, 'cube($1)');
-
-//x^y
-expr = expr.replace(/(\w+|\([^()]*\))\s*\^\s*(\w+|\([^()]*\))/g, 'power($1, $2)');
-
-//x√y
-expr = expr.replace(/(\w+|\([^()]*\))\s*√\s*(\w+|\([^()]*\))/g, 'x_yrt($2, $1)');
-
-//-
-expr = expr.replace(/-\s*(\w+|\([^()]*\))/g, 'makeNegative($1)');
-
-//log
-expr = expr.replace(/log\(([^)]+)\)/g, 'computeLog10($1)');
-
-//Ln
-expr = expr.replace(/Ln\(([^)]+)\)/g, 'computeLn($1)');
-
-//logbase2
-expr = expr.replace(/log(\d+)\(([^)]+)\)/g, 'computeLogBase($2, $1)');
-
-//summation
-expr = expr.replace(/∑\(([^,]+),([^,]+),([^,]+),([^)]+)\)/g, 'computeSummation($1, $2, $3, $4)');
-
- // Handle integration e.g., ∫(a,b,f(x),dx) => computeIntegration(a, b, f(x))
-  expr = expr.replace(/∫\(([^,]+),([^,]+),([^,]+),dx\)/g, 'computeIntegration($1, $2, "$3")');
-    
-  //arg
-expr = expr.replace(/arg\(([^)]+)\)/gi, 'computeArg($1)');
-
-
-  //congj
-expr = expr.replace(/congj\(([^)]+)\)/gi, 'computecongj($1)');
-
-
-  //▶a+bi
- expr = expr.replace(/([a-zA-Z0-9_]+)\s*▶\s*[^\s)]+/g, 'compute_abi($1)');
-
-
-  //▶r∠θ
-expr = expr.replace(/([a-zA-Z0-9_]+)\s*▶\s*[^)\s]+∠[^)\s]+/g, 'computePolar($1)');
-
-
-
-
-
-  // Handle differentiation e.g., d/dx(f(x),x0) => computeDerivative(f(x), x0)
+  // Handle differentiation BEFORE other replacements - improved regex
   expr = expr.replace(/d\/dx\(([^,]+)(?:,([^)]+))?\)/g, (match, fx, x0) => {
+    console.log(`Differentiation match: fx=${fx}, x0=${x0}`);
     return x0 ? `computeDerivative("${fx}", ${x0})` : `computeDerivative("${fx}")`;
   });
 
+  console.log(`After integration/differentiation replacement: ${expr}`);
 
-  // Convert angles based on DRG mode for trigonometric functions
-  if (DRG !== 'RAD') {
-    expr = expr.replace(/taylorSin\(([^)]+)\)/g, `taylorSin(convertAngleToRadians($1, '${DRG}'))`);
-    expr = expr.replace(/taylorCos\(([^)]+)\)/g, `taylorCos(convertAngleToRadians($1, '${DRG}'))`);
-    expr = expr.replace(/taylorTan\(([^)]+)\)/g, `taylorTan(convertAngleToRadians($1, '${DRG}'))`);
-    expr = expr.replace(/taylorAsin\(([^)]+)\)/g, `convertRadiansToAngle(taylorAsin($1), '${DRG}')`);
-    expr = expr.replace(/taylorAcos\(([^)]+)\)/g, `convertRadiansToAngle(taylorAcos($1), '${DRG}')`);
-    expr = expr.replace(/taylorAtan\(([^)]+)\)/g, `convertRadiansToAngle(taylorAtan($1), '${DRG}')`);
+  // Replace operators for JavaScript evaluation (only if not already handled)
+  if (!expr.includes('computeIntegration') && !expr.includes('computeDerivative')) {
+    expr = expr.replace(/X/g, '*');
+    expr = expr.replace(/÷/g, '/');
+    expr = expr.replace(/\^/g, '**');
+
+    // Handle factorial e.g., 5! => factorial(5)
+    expr = expr.replace(/(\d+|\([^()]*\))\s*!/g, 'factorial($1)');
+
+    // Handle x⁻¹ => 1/x or (expr)⁻¹ => 1/(expr)
+    expr = expr.replace(/(\d+|\([^()]*\))⁻¹/g, '(1/($1))');
+
+    // Handle division e.g., a / b => divide(a, b)
+    expr = expr.replace(/(\w+|\([^()]*\))\s*\/\s*(\w+|\([^()]*\))/g, 'divide($1, $2)');
+
+    // Handle expressions like x*(y/z) => multiply(x, divide(y, z))
+    expr = expr.replace(/(\w+)\s*\*\s*\(\s*(\w+)\s*\/\s*(\w+)\s*\)/g, 'multiply($1, divide($2, $3))');
+
+    // Handle special functions
+    expr = expr.replace(/√(\d+|\([^()]*\))/g, 'sqrt($1)');
+    expr = expr.replace(/∛\s*(\w+|\([^()]*\))/g, 'cbrt($1)');
+    expr = expr.replace(/(\d+(\.\d+)?|\w+|\([^()]*\))²/g, 'square($1)');
+    expr = expr.replace(/(\w+|\([^()]*\))³/g, 'cube($1)');
+    expr = expr.replace(/(\w+|\([^()]*\))\s*\^\s*(\w+|\([^()]*\))/g, 'power($1, $2)');
+    expr = expr.replace(/(\w+|\([^()]*\))\s*√\s*(\w+|\([^()]*\))/g, 'x_yrt($2, $1)');
+    expr = expr.replace(/-\s*(\w+|\([^()]*\))/g, 'makeNegative($1)');
+    expr = expr.replace(/log\(([^)]+)\)/g, 'computeLog10($1)');
+    expr = expr.replace(/Ln\(([^)]+)\)/g, 'computeLn($1)');
+    expr = expr.replace(/log(\d+)\(([^)]+)\)/g, 'computeLogBase($2, $1)');
+    expr = expr.replace(/∑\(([^,]+),([^,]+),([^,]+),([^)]+)\)/g, 'computeSummation($1, $2, $3, $4)');
+    expr = expr.replace(/arg\(([^)]+)\)/gi, 'computeArg($1)');
+    expr = expr.replace(/congj\(([^)]+)\)/gi, 'computecongj($1)');
+    expr = expr.replace(/([a-zA-Z0-9_]+)\s*▶\s*[^\s)]+/g, 'compute_abi($1)');
+    expr = expr.replace(/([a-zA-Z0-9_]+)\s*▶\s*[^)\s]+∠[^)\s]+/g, 'computePolar($1)');
+
+    // Convert angles based on DRG mode for trigonometric functions
+    if (typeof DRG !== 'undefined' && DRG !== 'RAD') {
+      expr = expr.replace(/taylorSin\(([^)]+)\)/g, `taylorSin(convertAngleToRadians($1, '${DRG}'))`);
+      expr = expr.replace(/taylorCos\(([^)]+)\)/g, `taylorCos(convertAngleToRadians($1, '${DRG}'))`);
+      expr = expr.replace(/taylorTan\(([^)]+)\)/g, `taylorTan(convertAngleToRadians($1, '${DRG}'))`);
+      expr = expr.replace(/taylorAsin\(([^)]+)\)/g, `convertRadiansToAngle(taylorAsin($1), '${DRG}')`);
+      expr = expr.replace(/taylorAcos\(([^)]+)\)/g, `convertRadiansToAngle(taylorAcos($1), '${DRG}')`);
+      expr = expr.replace(/taylorAtan\(([^)]+)\)/g, `convertRadiansToAngle(taylorAtan($1), '${DRG}')`);
+    }
+
+    // Original trig function replacements
+    expr = expr.replace(/sin\(/g, 'taylorSin(');
+    expr = expr.replace(/cos\(/g, 'taylorCos(');
+    expr = expr.replace(/tan\(/g, 'taylorTan(');
+    expr = expr.replace(/sin⁻¹\(/g, 'taylorAsin(');
+    expr = expr.replace(/cos⁻¹\(/g, 'taylorAcos(');
+    expr = expr.replace(/tan⁻¹\(/g, 'taylorAtan(');
+    expr = expr.replace(/sinh\(/g, 'taylorSinh(');
+    expr = expr.replace(/cosh\(/g, 'taylorCosh(');
+    expr = expr.replace(/tanh\(/g, 'taylorTanh(');
+    expr = expr.replace(/sinh⁻¹\(/g, 'taylorAsinh(');
+    expr = expr.replace(/cosh⁻¹\(/g, 'taylorAcosh(');
+    expr = expr.replace(/tanh⁻¹\(/g, 'taylorAtanh(');
   }
 
-  // Original trig function replacements
-  expr = expr.replace(/sin\(/g, 'taylorSin(');
-  expr = expr.replace(/cos\(/g, 'taylorCos(');
-  expr = expr.replace(/tan\(/g, 'taylorTan(');
-  
+  console.log(`Final expression before evaluation: ${expr}`);
 
-  // Inverse trig functions
-  expr = expr.replace(/sin⁻¹\(/g, 'taylorAsin(');
-  expr = expr.replace(/cos⁻¹\(/g, 'taylorAcos(');
-  expr = expr.replace(/tan⁻¹\(/g, 'taylorAtan(');
-
-  // Hyperbolic functions
-  expr = expr.replace(/sinh\(/g, 'taylorSinh(');
-  expr = expr.replace(/cosh\(/g, 'taylorCosh(');
-  expr = expr.replace(/tanh\(/g, 'taylorTanh(');
-
-  // Inverse hyperbolic functions
-  expr = expr.replace(/sinh⁻¹\(/g, 'taylorAsinh(');
-  expr = expr.replace(/cosh⁻¹\(/g, 'taylorAcosh(');
-  expr = expr.replace(/tanh⁻¹\(/g, 'taylorAtanh(');   
-
- 
   try {
     const evalInScope = new Function(
-      'PI', 'E', 'factorial','abs','sqrt','divide','div_mul','cbrt','square','cube','power',
-      'makeNegative','computeLog10','computeLn','computeLogBase','computeIntegration','computeDerivative',
-      'computeSummation','taylorSin','taylorCos','taylorTan',
-      'taylorAsin','taylorAcos','taylorAtan','taylorSinh','taylorCosh','taylorTanh','taylorAsinh','taylorAcosh','taylorAtanh',
-      'computeArg','computecongj','compute_abi','computePolar',
-     `return ${expr};`
+      'PI', 'E', 'factorial', 'abs', 'sqrt', 'divide', 'div_mul', 'cbrt', 'square', 'cube', 'x_yrt', 'makeNegative',
+      'computeLog10', 'computeLn', 'computeLogBase', 'computeIntegration', 'computeDerivative', 'computeSummation',
+      'taylorSin', 'taylorCos', 'taylorTan', 'taylorAsin', 'taylorAcos', 'taylorAtan', 'taylorSinh', 'taylorCosh', 'taylorTanh',
+      'taylorAsinh', 'taylorAcosh', 'taylorAtanh', 'computeArg', 'computecongj', 'compute_abi', 'computePolar',
+      `return ${expr};`
     );
 
-    const result = evalInScope(PI, E, factorial,abs,sqrt,divide,div_mul,cbrt,square,cube,x_yrt,makeNegative,computeLog10,computeLn,computeLogBase,computeSummation,taylorSin,taylorCos,
-      taylorTan,taylorAsin,taylorAcos,computeDerivative,computeIntegration,taylorAtan,taylorSinh,taylorCosh,taylorTanh,taylorAsinh,taylorAcosh,taylorAtanh,computeArg,
-      computecongj,compute_abi,computePolar
+    const result = evalInScope(
+      PI, E, factorial, abs, sqrt, divide, div_mul, cbrt, square, cube, x_yrt, makeNegative,
+      computeLog10, computeLn, computeLogBase, computeIntegration, computeDerivative, computeSummation,
+      taylorSin, taylorCos, taylorTan, taylorAsin, taylorAcos, taylorAtan, taylorSinh, taylorCosh, taylorTanh,
+      taylorAsinh, taylorAcosh, taylorAtanh, computeArg, computecongj, compute_abi, computePolar
     );
-    return result;
+
+    console.log(`Evaluation result: ${result}`);
+    return (typeof result === 'number' && !isNaN(result)) ? result : "Error";
+
   } catch (error) {
     console.error("Evaluation error:", error);
-    return "Error";
+    return "Error: " + error.message;
   }
 };
+
+
 
 
   // Function to handle equals button
@@ -885,11 +865,18 @@ expr = expr.replace(/([a-zA-Z0-9_]+)\s*▶\s*[^)\s]+∠[^)\s]+/g, 'computePolar(
     }
     // Normal equation evaluation
     else if (expressionInput) {
-      const result = evaluateExpression(expressionInput);
-      setResult(result.toString());
-      insertRecord(expressionInput,result)
-      setLastResult(result.toString());
-    }
+  const result = evaluateExpression(expressionInput);
+
+  // ❌ Prevent saving invalid results
+  if (typeof result !== 'number' || isNaN(result)) {
+    setResult("Error");
+    return;
+  }
+
+  setResult(result.toString());
+  insertRecord(expressionInput, result);
+  setLastResult(result.toString());
+}
 
     
   } catch (error) {
@@ -898,7 +885,27 @@ expr = expr.replace(/([a-zA-Z0-9_]+)\s*▶\s*[^)\s]+∠[^)\s]+/g, 'computePolar(
   }
 };
 
+const handlegraph=()=>{
+  const currentPos = cursorPosition !== null ? cursorPosition : expressionInput.length;
+  if (graphcount===0){
+    const newExpression = expressionInput.substring(0, currentPos) + 'fx=' +
+                          expressionInput.substring(currentPos);
+    setExpressionInput(newExpression);
+    setFirstPlaceholderPosition(currentPos + 3);
+    setCursorPosition(currentPos + 3);
+    setgraphcount(1)
+  }
+  else if(graphcount==1){
+    let cleanedExpression = expressionInput.startsWith("fx=")
+  ? expressionInput.substring(3) // remove first 3 characters
+  : expressionInput;
+ console.log(cleanedExpression)
+  setgraphcount(0)
 
+    navigation.navigate('Graph',{grapequation:cleanedExpression})
+  }
+
+}
 return (
 
 <SafeAreaView style={ss.mainView}>
@@ -946,7 +953,7 @@ return (
           </TouchableOpacity>
         </View>
         <View>
-          <TouchableOpacity style={ss.graphbtn} >
+          <TouchableOpacity style={ss.graphbtn} onPress={()=>{handlegraph()}}>
             <Text style={{marginTop:2}}>GRAPH</Text> 
           </TouchableOpacity>
         </View>
@@ -963,7 +970,7 @@ return (
           <Text>Alpha</Text> 
         </TouchableOpacity>
 
-        <TouchableOpacity style={{alignItems:'center',marginLeft:10,backgroundColor:'#D9D9D9', borderRadius:10,height:25,width:50}}>
+        <TouchableOpacity style={{alignItems:'center',marginLeft:10,backgroundColor:'#D9D9D9', borderRadius:10,height:25,width:50}} onPress={()=>{handleEquals()}}>
         <Image source={require('./Assets/leftArrow.png')} style={{height:15,width:15,marginTop:4}}></Image>
         </TouchableOpacity>
 
