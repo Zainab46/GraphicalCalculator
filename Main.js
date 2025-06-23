@@ -4,12 +4,8 @@ import { factorial , PI,E,abs,sqrt, div_mul, divide, cbrt, square, cube, x_yrt,
   makeNegative, computeLog10, computeLn,computeLogBase, 
   computeSummation,taylorSin,taylorTan,taylorCos,taylorAsin,taylorAcos,taylorAtan,
 taylorSinh,taylorCosh,taylorTanh,taylorAsinh,taylorAcosh,taylorAtanh,
-computeArg,computecongj,compute_abi,computePolar,parseComplex,initDB,insertRecord,computeIntegration,computeDerivative,advancedIntegration,symbolicDerivative} from "./Screens/AllLogics";
-
-
-
-
-
+computeArg,computecongj,compute_abi,computePolar,parseComplex,initDB,insertRecord,computeIntegration,computeDerivative,
+Rand,advancedIntegration,symbolicDerivative,tenPower} from "./Screens/AllLogics";
 
 
 
@@ -138,6 +134,9 @@ else if(shift===true && number==='8'){
 else if(shift===true && number==='2'&& ActualMode==='CMPLX'){
     navigation.navigate('ShiftTwo')
   }
+else if(shift===true && number==='0'){
+  handleRand();
+}
 
 else{
    const newExpression= expressionInput.substring(0,currentPos)+number+expressionInput.substring(currentPos);  // ab □ exist ne krta just add value at current Position 
@@ -783,6 +782,10 @@ const evaluateExpression = (expr) => {
     expr = expr.replace(/sinh⁻¹\(/g, 'taylorAsinh(');
     expr = expr.replace(/cosh⁻¹\(/g, 'taylorAcosh(');
     expr = expr.replace(/tanh⁻¹\(/g, 'taylorAtanh(');
+    expr = expr.replace(/10\^(\d+(\.\d+)?|\([^()]*\))/g, 'tenPower($1)');
+    expr = expr.replace(/Rand\(\)/g, 'Rand()');
+    expr = expr.replace(/π/g, 'PI');
+    expr = expr.replace(/e/g, 'E');
   }
 
   console.log(`Final expression before evaluation: ${expr}`);
@@ -792,7 +795,8 @@ const evaluateExpression = (expr) => {
       'PI', 'E', 'factorial', 'abs', 'sqrt', 'divide', 'div_mul', 'cbrt', 'square', 'cube', 'x_yrt', 'makeNegative',
       'computeLog10', 'computeLn', 'computeLogBase', 'computeIntegration', 'computeDerivative', 'computeSummation',
       'taylorSin', 'taylorCos', 'taylorTan', 'taylorAsin', 'taylorAcos', 'taylorAtan', 'taylorSinh', 'taylorCosh', 'taylorTanh',
-      'taylorAsinh', 'taylorAcosh', 'taylorAtanh', 'computeArg', 'computecongj', 'compute_abi', 'computePolar',
+      'taylorAsinh', 'taylorAcosh', 'taylorAtanh', 'computeArg', 'computecongj', 'compute_abi', 'computePolar','tenPower',
+      'Rand',
       `return ${expr};`
     );
 
@@ -800,7 +804,7 @@ const evaluateExpression = (expr) => {
       PI, E, factorial, abs, sqrt, divide, div_mul, cbrt, square, cube, x_yrt, makeNegative,
       computeLog10, computeLn, computeLogBase, computeIntegration, computeDerivative, computeSummation,
       taylorSin, taylorCos, taylorTan, taylorAsin, taylorAcos, taylorAtan, taylorSinh, taylorCosh, taylorTanh,
-      taylorAsinh, taylorAcosh, taylorAtanh, computeArg, computecongj, compute_abi, computePolar
+      taylorAsinh, taylorAcosh, taylorAtanh, computeArg, computecongj, compute_abi, computePolar,tenPower,Rand
     );
 
     console.log(`Evaluation result: ${result}`);
@@ -811,9 +815,43 @@ const evaluateExpression = (expr) => {
     return "Error: " + error.message;
   }
 };
+const handleExp = () => {
+  const currentPos = cursorPosition !== null ? cursorPosition : expressionInput.length;
 
+  if (shift === true && alpha === false) {
+    // Handle π insertion
+    const newExpression = expressionInput.substring(0, currentPos) + "π" + expressionInput.substring(currentPos);
+    setExpressionInput(newExpression);
+  } 
+  else if (shift === false && alpha === true) {
+    if (expressionInput !== '') {
+      HandleClear();
+      setTimeout(() => {
+        setExpressionInput("e");
+      }, 0);
+    } else {
+      const newExpression = expressionInput.substring(0, currentPos) + "e" + expressionInput.substring(currentPos);
+      setExpressionInput(newExpression);
+    }
+  } 
+  else if (shift === false && alpha === false) {
+    // Insert 10^x
+    const newExpression = expressionInput.substring(0, currentPos) + '10^' + expressionInput.substring(currentPos);
+    setExpressionInput(newExpression);
+    setCursorPosition(currentPos + 1); // Optional
+  }
+};
 
+const handleRand = () => {
+  const currentPos = cursorPosition !== null ? cursorPosition : expressionInput.length;
 
+  const insertText = 'Rand()';
+  const newExpression =
+    expressionInput.substring(0, currentPos) + insertText + expressionInput.substring(currentPos);
+
+  setExpressionInput(newExpression);
+  setCursorPosition(currentPos + 5); // Cursor between the brackets: Rand(|)
+};
 
   // Function to handle equals button
  // Modify your handleEquals to handle the x^y special case
@@ -1461,8 +1499,10 @@ return (
               <Text style={{marginLeft:4,color:'white'}}>π      e</Text>
             </View>
           </View>
-          <TouchableOpacity style={{alignItems:'center',backgroundColor:'#D9D9D9', borderRadius:10,height:32,width:55,marginTop:1}}>
-            <Text style={{alignItems:'center',fontSize:20,fontWeight:'bold',marginTop:3}}>Exp</Text>
+          <TouchableOpacity style={{alignItems:'center',backgroundColor:'#D9D9D9', borderRadius:10,height:32,width:55,marginTop:1}}
+          onPress={()=>handleExp('x')}
+          >
+            <Text style={{alignItems:'center',fontSize:18,fontWeight:'bold',marginTop:3}}>*10^x</Text>
           </TouchableOpacity>
         </View>
 

@@ -355,7 +355,7 @@ export const taylorTanh = (x) => {
 export const taylorAsinh = (x) => {
   // For large values, use logarithmic identity
   if (Math.abs(x) > 1e6) {
-    return Math.sign(x) * (taylorLn(Math.abs(x)) + taylorLn(2));
+    return Math.sign(x) * (computeLn(Math.abs(x)) + computeLn(2));
   }
   
   return computeLn(x + sqrt(x*x + 1));
@@ -558,7 +558,11 @@ export const fetchRecords = async () => {
     return [];
   }
 };
+export const deleteRecordById = async (id) => {
+  if (!db) db = await SQLite.openDatabase({ name: 'base_converter.db', location: 'default' });
 
+  await db.executeSql('DELETE FROM records WHERE id = ?', [id]);
+};
 
 export function computeIntegration(a, b, functionExpr) {
   try {
@@ -837,4 +841,50 @@ function symbolicDerivative(functionExpr) {
   }
   
   return expr;
+}
+
+export function tenPower(x) {
+  // Approximate ln(10) manually
+  const ln10 = 2.302585092994046; // Precomputed constant
+
+  // Calculate e^(x * ln(10)) manually using Taylor series
+  const y = x * ln10;
+  const nTerms = 30; // More terms = better accuracy
+
+  let result = 1;
+  let term = 1;
+
+  for (let i = 1; i < nTerms; i++) {
+    term *= y / i;
+    result += term;
+  }
+
+  return result;
+}
+
+
+
+let seed = Date.now() % 1000000;
+
+// Rand function that mimics Casio's Rnd behavior
+export function Rand(n) {
+  const a = 1664525;
+  const c = 1013904223;
+  const m = 4294967296;
+
+  seed = (a * seed + c) % m;
+  const randomFloat = seed / m;
+
+  // If n is undefined → float between 0 and 1 (like Rnd())
+  if (n === undefined) {
+    return randomFloat;
+  }
+
+  // If n is a number → return int in [0, n - 1]
+  if (typeof n === 'number' && n > 0) {
+    return Math.floor(randomFloat * n);  // No built-in alternative? use manual floor
+  }
+
+  // Invalid input
+  throw new Error("Rand() expects a positive number or no argument");
 }
