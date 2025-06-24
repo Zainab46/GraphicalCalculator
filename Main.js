@@ -1007,7 +1007,7 @@ return (
           <Text>Alpha</Text> 
         </TouchableOpacity>
 
-        <TouchableOpacity style={{alignItems:'center',marginLeft:10,backgroundColor:'#D9D9D9', borderRadius:10,height:25,width:50}} onPress={()=>{handleEquals()}}>
+        <TouchableOpacity style={{alignItems:'center',marginLeft:10,backgroundColor:'#D9D9D9', borderRadius:10,height:25,width:50}} >
         <Image source={require('./Assets/leftArrow.png')} style={{height:15,width:15,marginTop:4}}></Image>
         </TouchableOpacity>
 

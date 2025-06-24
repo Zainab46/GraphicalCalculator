@@ -15,7 +15,7 @@ const { width: screenWidth } = Dimensions.get('window');
 
 const Graph = ({ route }) => {
   const { grapequation } = route.params;
-  
+  console.log(grapequation);
   const [startValue, setStartValue] = useState('1');
   const [endValue, setEndValue] = useState('10');
   const [showInputs, setShowInputs] = useState(true);
