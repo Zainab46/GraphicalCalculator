@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,27 +8,44 @@ import {
   StyleSheet,
   Alert,
   Dimensions,
+  PanResponder,
 } from 'react-native';
-import Svg, { Path, Line, Text as SvgText, G, Rect, Defs, Pattern } from 'react-native-svg';
+import Svg, { Path, Line, Text as SvgText, G, Rect, Circle } from 'react-native-svg';
 
-const { width: screenWidth } = Dimensions.get('window');
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 const Graph = ({ route }) => {
   const { grapequation } = route.params;
-  console.log(grapequation);
+  
   const [startValue, setStartValue] = useState('1');
   const [endValue, setEndValue] = useState('10');
   const [showInputs, setShowInputs] = useState(true);
   const [graphData, setGraphData] = useState(null);
+  
+  // Viewport states - shows only a portion of the full graph
+  const [viewportX, setViewportX] = useState(0); // Current viewport X position
+  const [viewportY, setViewportY] = useState(0); // Current viewport Y position
+  const [viewportWidth, setViewportWidth] = useState(15); // How many X units to show
+  const [viewportHeight, setViewportHeight] = useState(15); // How many Y units to show
+  
+  // Zoom states
+  const [zoomLevel, setZoomLevel] = useState(1);
+  
+  // Cursor states
+  const [cursorVisible, setCursorVisible] = useState(false);
+  const [cursorX, setCursorX] = useState(0);
+  const [cursorY, setCursorY] = useState(0);
+  const [cursorValue, setCursorValue] = useState({ x: 0, y: 0 });
+  
+  // Refs for gesture handling
+  const lastPanRef = useRef({ x: 0, y: 0 });
+  const isDraggingRef = useRef(false);
 
   // Function to safely evaluate mathematical expressions
   const evaluateExpression = (equation, x) => {
     try {
-      // First, handle the mathematical notation you're using
       let expr = equation
-        // Handle both uppercase and lowercase X
         .replace(/X/g, 'x')
-        // Handle superscript numbers (², ³, etc.) - convert to power notation
         .replace(/²/g, '^2')
         .replace(/³/g, '^3')
         .replace(/⁴/g, '^4')
@@ -37,13 +54,10 @@ const Graph = ({ route }) => {
         .replace(/⁷/g, '^7')
         .replace(/⁸/g, '^8')
         .replace(/⁹/g, '^9')
-        // Handle mathematical symbols
         .replace(/π/g, 'Math.PI')
         .replace(/÷/g, '/')
         .replace(/×/g, '*')
-        // Replace x with the actual value
         .replace(/x/g, `(${x})`)
-        // Handle mathematical functions
         .replace(/sin/g, 'Math.sin')
         .replace(/cos/g, 'Math.cos')
         .replace(/tan/g, 'Math.tan')
@@ -52,14 +66,11 @@ const Graph = ({ route }) => {
         .replace(/sqrt/g, 'Math.sqrt')
         .replace(/abs/g, 'Math.abs')
         .replace(/exp/g, 'Math.exp')
-        // Handle power operator
         .replace(/\^/g, '**')
-        // Handle implicit multiplication (like 2x becomes 2*x)
         .replace(/(\d)\(/g, '$1*(')
         .replace(/\)(\d)/g, ')*$1')
         .replace(/(\d)([a-zA-Z])/g, '$1*$2');
       
-      // Use Function constructor instead of eval for better security
       const func = new Function('return ' + expr);
       const result = func();
       
@@ -70,7 +81,7 @@ const Graph = ({ route }) => {
     }
   };
 
-  // Generate graph data points
+  // Generate graph data points for the full range
   const generateGraphData = () => {
     const start = parseFloat(startValue);
     const end = parseFloat(endValue);
@@ -86,13 +97,13 @@ const Graph = ({ route }) => {
     }
     
     const points = [];
-    const step = (end - start) / 400; // More points for smoother curve
+    const step = (end - start) / 2000; // More points for smoother curve
     
     let minY = Infinity;
     let maxY = -Infinity;
     let validPoints = 0;
     
-    // First pass: calculate all points and find min/max Y
+    // Calculate all points and find global min/max Y
     for (let x = start; x <= end; x += step) {
       const y = evaluateExpression(grapequation, x);
       if (y !== null && !isNaN(y) && isFinite(y)) {
@@ -111,32 +122,136 @@ const Graph = ({ route }) => {
     // Add some padding to Y range
     const yRange = maxY - minY;
     const yPadding = yRange * 0.1;
-    minY -= yPadding;
-    maxY += yPadding;
+    const globalMinY = minY - yPadding;
+    const globalMaxY = maxY + yPadding;
     
-    // Graph dimensions
-    const graphWidth = Math.max(800, screenWidth * 2); // Scrollable width
-    const graphHeight = 300;
+    // Set initial viewport to show first portion of the graph
+    const initialViewportWidth = Math.min(15, (end - start) / 2);
+    const initialViewportHeight = Math.min(15, (globalMaxY - globalMinY) / 2);
     
-    // Second pass: normalize coordinates for display
-    const normalizedPoints = points.map(point => ({
-      x: point.x,
-      y: point.y,
-      screenX: ((point.x - start) / (end - start)) * graphWidth,
-      screenY: graphHeight - ((point.y - minY) / (maxY - minY)) * (graphHeight - 40) - 20
-    }));
+    setViewportX(start);
+    setViewportY(globalMinY + (globalMaxY - globalMinY) / 2 - initialViewportHeight / 2);
+    setViewportWidth(initialViewportWidth);
+    setViewportHeight(initialViewportHeight);
     
     setGraphData({
-      points: normalizedPoints,
-      minY,
-      maxY,
-      minX: start,
-      maxX: end,
-      graphWidth,
-      graphHeight
+      allPoints: points,
+      globalMinY,
+      globalMaxY,
+      globalMinX: start,
+      globalMaxX: end,
+      graphWidth: screenWidth - 40,
+      graphHeight: 400
     });
     
     setShowInputs(false);
+  };
+
+  // Get points visible in current viewport
+  const getViewportPoints = () => {
+    if (!graphData) return [];
+    
+    const viewportMinX = viewportX;
+    const viewportMaxX = viewportX + viewportWidth;
+    const viewportMinY = viewportY;
+    const viewportMaxY = viewportY + viewportHeight;
+    
+    // Filter points within viewport
+    const visiblePoints = graphData.allPoints.filter(point => 
+      point.x >= viewportMinX && point.x <= viewportMaxX &&
+      point.y >= viewportMinY && point.y <= viewportMaxY
+    );
+    
+    // Convert to screen coordinates
+    return visiblePoints.map(point => ({
+      x: point.x,
+      y: point.y,
+      screenX: ((point.x - viewportMinX) / viewportWidth) * graphData.graphWidth,
+      screenY: graphData.graphHeight - ((point.y - viewportMinY) / viewportHeight) * graphData.graphHeight
+    }));
+  };
+
+  // Pan responder for handling touch gestures
+  const panResponder = PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: () => true,
+    
+    onPanResponderGrant: (evt) => {
+      lastPanRef.current = { x: viewportX, y: viewportY };
+      isDraggingRef.current = false;
+      
+      // Show cursor at touch point
+      const touchX = evt.nativeEvent.locationX;
+      const touchY = evt.nativeEvent.locationY;
+      updateCursorPosition(touchX, touchY);
+      setCursorVisible(true);
+    },
+    
+    onPanResponderMove: (evt, gestureState) => {
+      const dragThreshold = 10;
+      
+      if (Math.abs(gestureState.dx) > dragThreshold || Math.abs(gestureState.dy) > dragThreshold) {
+        // Dragging to pan viewport
+        isDraggingRef.current = true;
+        
+        const sensitivity = 0.02; // Adjust this to make dragging faster/slower
+        const newViewportX = lastPanRef.current.x - (gestureState.dx * viewportWidth * sensitivity);
+        const newViewportY = lastPanRef.current.y + (gestureState.dy * viewportHeight * sensitivity);
+        
+        // Constrain viewport within graph bounds
+        const constrainedX = Math.max(
+          graphData.globalMinX,
+          Math.min(newViewportX, graphData.globalMaxX - viewportWidth)
+        );
+        const constrainedY = Math.max(
+          graphData.globalMinY,
+          Math.min(newViewportY, graphData.globalMaxY - viewportHeight)
+        );
+        
+        setViewportX(constrainedX);
+        setViewportY(constrainedY);
+      } else if (!isDraggingRef.current) {
+        // Update cursor position if not dragging
+        const touchX = evt.nativeEvent.locationX;
+        const touchY = evt.nativeEvent.locationY;
+        updateCursorPosition(touchX, touchY);
+      }
+    },
+    
+    onPanResponderRelease: () => {
+      if (!isDraggingRef.current) {
+        // Keep cursor visible for a moment if it was just a tap
+        setTimeout(() => {
+          setCursorVisible(false);
+        }, 2000);
+      } else {
+        setCursorVisible(false);
+      }
+      isDraggingRef.current = false;
+    },
+  });
+
+  // Update cursor position and calculate corresponding graph values
+  const updateCursorPosition = (touchX, touchY) => {
+    if (!graphData) return;
+    
+    setCursorX(touchX);
+    setCursorY(touchY);
+    
+    // Convert screen coordinates to viewport coordinates
+    const viewportMinX = viewportX;
+    const viewportMinY = viewportY;
+    
+    const graphX = viewportMinX + (touchX / graphData.graphWidth) * viewportWidth;
+    const graphY = viewportMinY + ((graphData.graphHeight - touchY) / graphData.graphHeight) * viewportHeight;
+    
+    // Find the actual Y value on the curve for this X
+    const actualY = evaluateExpression(grapequation, graphX);
+    
+    setCursorValue({ 
+      x: graphX, 
+      y: actualY !== null ? actualY : graphY 
+    });
   };
 
   const handlePlotGraph = () => {
@@ -146,20 +261,67 @@ const Graph = ({ route }) => {
   const handleReset = () => {
     setShowInputs(true);
     setGraphData(null);
+    setZoomLevel(1);
+    setViewportX(0);
+    setViewportY(0);
+    setCursorVisible(false);
   };
 
-  // Create SVG path from points
-  const createPath = () => {
-    if (!graphData?.points || graphData.points.length === 0) return '';
+  const handleZoomIn = () => {
+    const newWidth = viewportWidth * 0.7;
+    const newHeight = viewportHeight * 0.7;
     
-    let path = `M ${graphData.points[0].screenX} ${graphData.points[0].screenY}`;
-    for (let i = 1; i < graphData.points.length; i++) {
-      path += ` L ${graphData.points[i].screenX} ${graphData.points[i].screenY}`;
+    // Keep viewport centered
+    setViewportX(prev => prev + (viewportWidth - newWidth) / 2);
+    setViewportY(prev => prev + (viewportHeight - newHeight) / 2);
+    setViewportWidth(newWidth);
+    setViewportHeight(newHeight);
+  };
+
+  const handleZoomOut = () => {
+    if (!graphData) return;
+    
+    const newWidth = Math.min(viewportWidth * 1.4, graphData.globalMaxX - graphData.globalMinX);
+    const newHeight = Math.min(viewportHeight * 1.4, graphData.globalMaxY - graphData.globalMinY);
+    
+    // Keep viewport centered and within bounds
+    let newX = viewportX - (newWidth - viewportWidth) / 2;
+    let newY = viewportY - (newHeight - viewportHeight) / 2;
+    
+    newX = Math.max(graphData.globalMinX, Math.min(newX, graphData.globalMaxX - newWidth));
+    newY = Math.max(graphData.globalMinY, Math.min(newY, graphData.globalMaxY - newHeight));
+    
+    setViewportX(newX);
+    setViewportY(newY);
+    setViewportWidth(newWidth);
+    setViewportHeight(newHeight);
+  };
+
+  const resetView = () => {
+    if (!graphData) return;
+    
+    const initialViewportWidth = Math.min(15, (graphData.globalMaxX - graphData.globalMinX) / 2);
+    const initialViewportHeight = Math.min(15, (graphData.globalMaxY - graphData.globalMinY) / 2);
+    
+    setViewportX(graphData.globalMinX);
+    setViewportY(graphData.globalMinY + (graphData.globalMaxY - graphData.globalMinY) / 2 - initialViewportHeight / 2);
+    setViewportWidth(initialViewportWidth);
+    setViewportHeight(initialViewportHeight);
+  };
+
+  // Create SVG path from visible points
+  const createPath = () => {
+    const points = getViewportPoints();
+    if (!points || points.length === 0) return '';
+    
+    let path = `M ${points[0].screenX} ${points[0].screenY}`;
+    for (let i = 1; i < points.length; i++) {
+      path += ` L ${points[i].screenX} ${points[i].screenY}`;
     }
     return path;
   };
 
-  // Generate grid lines
+  // Generate grid lines for current viewport
   const generateGridLines = () => {
     if (!graphData) return [];
     
@@ -167,8 +329,9 @@ const Graph = ({ route }) => {
     const { graphWidth, graphHeight } = graphData;
     
     // Vertical grid lines
-    for (let i = 0; i <= 20; i++) {
-      const x = (i / 20) * graphWidth;
+    const xStep = viewportWidth / 10;
+    for (let i = 0; i <= 10; i++) {
+      const x = (i / 10) * graphWidth;
       lines.push(
         <Line
           key={`v-${i}`}
@@ -177,14 +340,15 @@ const Graph = ({ route }) => {
           x2={x}
           y2={graphHeight}
           stroke="#e0e0e0"
-          strokeWidth="1"
+          strokeWidth="0.5"
         />
       );
     }
     
     // Horizontal grid lines
-    for (let i = 0; i <= 10; i++) {
-      const y = (i / 10) * graphHeight;
+    const yStep = viewportHeight / 8;
+    for (let i = 0; i <= 8; i++) {
+      const y = (i / 8) * graphHeight;
       lines.push(
         <Line
           key={`h-${i}`}
@@ -193,7 +357,7 @@ const Graph = ({ route }) => {
           x2={graphWidth}
           y2={y}
           stroke="#e0e0e0"
-          strokeWidth="1"
+          strokeWidth="0.5"
         />
       );
     }
@@ -201,17 +365,17 @@ const Graph = ({ route }) => {
     return lines;
   };
 
-  // Generate axis labels
+  // Generate axis labels for current viewport
   const generateLabels = () => {
     if (!graphData) return [];
     
     const labels = [];
-    const { graphWidth, graphHeight, minX, maxX, minY, maxY } = graphData;
+    const { graphWidth, graphHeight } = graphData;
     
     // X-axis labels
     for (let i = 0; i <= 10; i++) {
       const x = (i / 10) * graphWidth;
-      const value = minX + (i / 10) * (maxX - minX);
+      const value = viewportX + (i / 10) * viewportWidth;
       labels.push(
         <SvgText
           key={`x-label-${i}`}
@@ -227,13 +391,13 @@ const Graph = ({ route }) => {
     }
     
     // Y-axis labels
-    for (let i = 0; i <= 5; i++) {
-      const y = graphHeight - (i / 5) * (graphHeight - 40) - 20;
-      const value = minY + (i / 5) * (maxY - minY);
+    for (let i = 0; i <= 8; i++) {
+      const y = graphHeight - (i / 8) * graphHeight;
+      const value = viewportY + (i / 8) * viewportHeight;
       labels.push(
         <SvgText
           key={`y-label-${i}`}
-          x={5}
+          x={8}
           y={y + 3}
           fontSize="10"
           fill="#666"
@@ -251,13 +415,12 @@ const Graph = ({ route }) => {
     return (
       <View style={styles.container}>
         <View style={styles.inputContainer}>
-          <Text style={styles.title}>Graph Plotter</Text>
+          <Text style={styles.title}>Interactive Graph Plotter</Text>
           
           <View style={styles.equationContainer}>
             <Text style={styles.label}>Equation: {grapequation}</Text>
             <Text style={styles.hint}>
               Supports: sin(X), cos(X), tan(X), X², sqrt(X), log(X), etc.
-              Also handles: X³, π, ×, ÷, abs(X), exp(X)
             </Text>
           </View>
 
@@ -284,7 +447,7 @@ const Graph = ({ route }) => {
           </View>
 
           <TouchableOpacity style={styles.plotButton} onPress={handlePlotGraph}>
-            <Text style={styles.plotButtonText}>Plot Graph</Text>
+            <Text style={styles.plotButtonText}>Plot Interactive Graph</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -294,27 +457,40 @@ const Graph = ({ route }) => {
   return (
     <View style={styles.container}>
       <View style={styles.graphHeader}>
-        <Text style={styles.graphTitle}>Graph: {grapequation}</Text>
+        <Text style={styles.graphTitle}>Interactive Graph: {grapequation}</Text>
         <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
           <Text style={styles.resetButtonText}>New Graph</Text>
         </TouchableOpacity>
       </View>
       
-      <Text style={styles.rangeText}>
-        Range: {startValue} to {endValue}
-        {graphData && (
-          <Text>
-            {' | Y-range: '}
-            {graphData.minY.toFixed(2)} to {graphData.maxY.toFixed(2)}
+      <View style={styles.infoContainer}>
+        <Text style={styles.rangeText}>
+          Full Range: {startValue} to {endValue}
+        </Text>
+        <Text style={styles.viewportText}>
+          Viewport: X: {viewportX.toFixed(1)} to {(viewportX + viewportWidth).toFixed(1)} | 
+          Y: {viewportY.toFixed(1)} to {(viewportY + viewportHeight).toFixed(1)}
+        </Text>
+        {cursorVisible && (
+          <Text style={styles.cursorText}>
+            Cursor - X: {cursorValue.x.toFixed(3)} | Y: {cursorValue.y.toFixed(3)}
           </Text>
         )}
-      </Text>
+      </View>
 
-      <ScrollView
-        horizontal
-        style={styles.scrollContainer}
-        showsHorizontalScrollIndicator={true}
-      >
+      <View style={styles.controlsContainer}>
+        <TouchableOpacity style={styles.controlButton} onPress={handleZoomIn}>
+          <Text style={styles.controlButtonText}>Zoom In</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.controlButton} onPress={handleZoomOut}>
+          <Text style={styles.controlButtonText}>Zoom Out</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.controlButton} onPress={resetView}>
+          <Text style={styles.controlButtonText}>Reset View</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.graphContainer} {...panResponder.panHandlers}>
         {graphData && (
           <Svg
             width={graphData.graphWidth}
@@ -331,7 +507,7 @@ const Graph = ({ route }) => {
               x2={graphData.graphWidth}
               y2={graphData.graphHeight / 2}
               stroke="#999"
-              strokeWidth="2"
+              strokeWidth="1"
             />
             <Line
               x1={graphData.graphWidth / 2}
@@ -339,7 +515,7 @@ const Graph = ({ route }) => {
               x2={graphData.graphWidth / 2}
               y2={graphData.graphHeight}
               stroke="#999"
-              strokeWidth="2"
+              strokeWidth="1"
             />
             
             {/* Labels */}
@@ -352,9 +528,56 @@ const Graph = ({ route }) => {
               strokeWidth="2"
               fill="none"
             />
+            
+            {/* Cursor */}
+            {cursorVisible && (
+              <G>
+                <Line
+                  x1={cursorX}
+                  y1={0}
+                  x2={cursorX}
+                  y2={graphData.graphHeight}
+                  stroke="#00ff00"
+                  strokeWidth="1"
+                  strokeDasharray="5,5"
+                />
+                <Line
+                  x1={0}
+                  y1={cursorY}
+                  x2={graphData.graphWidth}
+                  y2={cursorY}
+                  stroke="#00ff00"
+                  strokeWidth="1"
+                  strokeDasharray="5,5"
+                />
+                <Circle
+                  cx={cursorX}
+                  cy={cursorY}
+                  r="4"
+                  fill="#00ff00"
+                  stroke="#ffffff"
+                  strokeWidth="2"
+                />
+              </G>
+            )}
           </Svg>
         )}
-      </ScrollView>
+      </View>
+
+      <View style={styles.instructionsContainer}>
+        <Text style={styles.instructionsText}>
+          • Drag to pan through different sections of the graph
+        </Text>
+        <Text style={styles.instructionsText}>
+          • Tap to show cursor and values at any point
+        </Text>
+        <Text style={styles.instructionsText}>
+          • Use zoom buttons to see more/fewer details
+        </Text>
+        <Text style={styles.instructionsText}>
+          • Viewport shows only 10-15 units at a time for better detail
+        </Text>
+      </View>
     </View>
   );
 };
@@ -372,10 +595,7 @@ const styles = StyleSheet.create({
     margin: 20,
     borderRadius: 10,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
@@ -433,7 +653,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   graphTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#333',
     flex: 1,
@@ -449,19 +669,71 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  rangeText: {
-    fontSize: 14,
-    color: '#666',
+  infoContainer: {
+    backgroundColor: '#fff',
     paddingHorizontal: 20,
     paddingVertical: 10,
-    backgroundColor: '#fff',
   },
-  scrollContainer: {
+  rangeText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  viewportText: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  cursorText: {
+    fontSize: 14,
+    color: '#00aa00',
+    fontWeight: '600',
+    marginTop: 4,
+  },
+  controlsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    backgroundColor: '#fff',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  controlButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  controlButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  graphContainer: {
     flex: 1,
     backgroundColor: '#fff',
+    margin: 20,
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   svg: {
     backgroundColor: '#fff',
+    borderRadius: 10,
+  },
+  instructionsContainer: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    marginTop: 10,
+  },
+  instructionsText: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 4,
   },
 });
 

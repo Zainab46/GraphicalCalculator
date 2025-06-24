@@ -943,29 +943,44 @@ const handlegraph=()=>{
   }
 
 }
+
+const handlearrows = (direction) => {
+  const currentPos = cursorPosition !== null ? cursorPosition : expressionInput.length;
+
+  let newPos = currentPos;
+
+  if (direction === 'left') {
+    newPos = Math.max(0, currentPos - 1);
+  } else if (direction === 'right') {
+    newPos = Math.min(expressionInput.length, currentPos + 1);
+  }
+
+  setCursorPosition(newPos);
+};
 return (
 
 <SafeAreaView style={ss.mainView}>
       <View style={{marginTop:22}}>
 
-      <TextInput   ref={inputRef} style={ss.textInput} multiline={true} 
-        onChangeText={(text) => {
-       setExpressionInput(text);
-
-    // Maintain cursor position
-    if (inputRef.current && cursorPosition !== null) {                         //cursor ko dkhta ha cursor kdr ha
-      inputRef.current.setNativeProps({
-        selection: { start: cursorPosition, end: cursorPosition }
-      });    }
-  } }
-  value={expressionInput}  
-  editable={true}  
-  showSoftInputOnFocus={false}
-  caretHidden={false}
+      <TextInput
+  ref={inputRef}
+  style={ss.textInput}
+  multiline={true}
+  value={expressionInput}
+  editable={true}
   autoFocus={true}
-  onSelectionChange={(event) => {            //values add ya delete krta ha 
-    const {selection} = event.nativeEvent;                      
+  caretHidden={false}
+  showSoftInputOnFocus={false}
+  onChangeText={(text) => {
+    setExpressionInput(text);
+  }}
+  onSelectionChange={(event) => {
+    const { selection } = event.nativeEvent;
     setCursorPosition(selection.start);
+  }}
+  selection={{
+    start: cursorPosition ?? expressionInput.length,
+    end: cursorPosition ?? expressionInput.length,
   }}
 />
  
@@ -1007,11 +1022,11 @@ return (
           <Text>Alpha</Text> 
         </TouchableOpacity>
 
-        <TouchableOpacity style={{alignItems:'center',marginLeft:10,backgroundColor:'#D9D9D9', borderRadius:10,height:25,width:50}} >
+        <TouchableOpacity style={{alignItems:'center',marginLeft:10,backgroundColor:'#D9D9D9', borderRadius:10,height:25,width:50}} onPress={()=>handlearrows('left')}>
         <Image source={require('./Assets/leftArrow.png')} style={{height:15,width:15,marginTop:4}}></Image>
         </TouchableOpacity>
 
-        <TouchableOpacity style={{alignItems:'center',marginLeft:10,backgroundColor:'#D9D9D9', borderRadius:10,height:25,width:50}}>
+        <TouchableOpacity style={{alignItems:'center',marginLeft:10,backgroundColor:'#D9D9D9', borderRadius:10,height:25,width:50}} onPress={()=>handlearrows('right')}>
           <Image source={require('./Assets/rightArrow.png')} style={{height:15,width:15,marginTop:4}}></Image> 
         </TouchableOpacity>
 
