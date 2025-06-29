@@ -5,7 +5,7 @@ import { factorial , PI,E,abs,sqrt, div_mul, divide, cbrt, square, cube, x_yrt,
   computeSummation,taylorSin,taylorTan,taylorCos,taylorAsin,taylorAcos,taylorAtan,
 taylorSinh,taylorCosh,taylorTanh,taylorAsinh,taylorAcosh,taylorAtanh,
 computeArg,computecongj,compute_abi,computePolar,parseComplex,initDB,insertRecord,computeIntegration,computeDerivative,
-Rand,advancedIntegration,symbolicDerivative,tenPower} from "./Screens/AllLogics";
+Rand,advancedIntegration,symbolicDerivative,tenPower,RanSharp,RanInt} from "./Screens/AllLogics";
 
 
 
@@ -374,6 +374,7 @@ const HandleLn = () => {
     setCursorPosition(currentPos + 4); // Position cursor after box
     }
   };
+
   
 //handle hyperbolic menu on button 
 const HandleHyp=(variable)=>{
@@ -539,17 +540,49 @@ else if(shift === true && variable === 'm' && alpha===false){
 
 
 // handle decimal click 
+const handleDecimalClick = () => {
+  const currentPos = cursorPosition !== null ? cursorPosition : expressionInput.length;
 
-const handleDecimalClick=()=>{
+  // If ALPHA is active → Insert RanInt(□,□)
+  if (alpha === true) {
+    const insertText = 'RanInt(□,□)';
+    setExpressionInput(
+      expressionInput.substring(0, currentPos) +
+      insertText +
+      expressionInput.substring(currentPos)
+    );
+    setFirstPlaceholderPosition(currentPos + 7); // position of first □
+    setSecondPlaceholderPosition(currentPos + 9); // position of second □
+    setCursorPosition(currentPos + 11); // after last )
+    return;
+  }
 
-// Check if the last number in the expression already has a decimal
-    const parts = expressionInput.split(/[\+\-X÷]/);
-    const lastPart = parts[parts.length - 1];
-    
-    if (!lastPart.includes('.')) {
-      setExpressionInput(expressionInput + '.');
-    }
+  // If SHIFT is active → Insert Ran# (converted to Rand() in evaluator)
+  else if (shift === true) {
+    const insertText = 'Rand()';
+    setExpressionInput(
+      expressionInput.substring(0, currentPos) +
+      insertText +
+      expressionInput.substring(currentPos)
+    );
+    setCursorPosition(currentPos + insertText.length);
+    return;
+  }
+
+  // Default behavior: Insert decimal only if last number doesn't already have one
+  const parts = expressionInput.split(/[\+\-\*X÷\/\(\)]/); // Add more symbols as needed
+  const lastPart = parts[parts.length - 1];
+
+  if (!lastPart.includes('.')) {
+    setExpressionInput(
+      expressionInput.substring(0, currentPos) +
+      '.' +
+      expressionInput.substring(currentPos)
+    );
+    setCursorPosition(currentPos + 1);
+  }
 };
+
 //handle hyperbolic values
 const ShowHyp=()=>{
 if(hypitems!==null&&shift==false){
@@ -687,6 +720,7 @@ const handle_integration_and_derivation = () => {
       }
     }
   };
+  
 
 
 const HandleClear=()=>{
@@ -782,10 +816,13 @@ const evaluateExpression = (expr) => {
     expr = expr.replace(/sinh⁻¹\(/g, 'taylorAsinh(');
     expr = expr.replace(/cosh⁻¹\(/g, 'taylorAcosh(');
     expr = expr.replace(/tanh⁻¹\(/g, 'taylorAtanh(');
+     expr = expr.replace(/π/g, 'PI');
+    expr = expr.replace(/e/g, 'E')
     expr = expr.replace(/10\^(\d+(\.\d+)?|\([^()]*\))/g, 'tenPower($1)');
-    expr = expr.replace(/Rand\(\)/g, 'Rand()');
-    expr = expr.replace(/π/g, 'PI');
-    expr = expr.replace(/e/g, 'E');
+    expr = expression.replace(/Rand\(\)/g, () => RanSharp());
+  expr = expr.replace(/RanInt\((\d+),\s*(\d+)\)/g, (_, a, b) => RanInt(Number(a), Number(b)))
+
+
   }
 
   console.log(`Final expression before evaluation: ${expr}`);
@@ -796,7 +833,7 @@ const evaluateExpression = (expr) => {
       'computeLog10', 'computeLn', 'computeLogBase', 'computeIntegration', 'computeDerivative', 'computeSummation',
       'taylorSin', 'taylorCos', 'taylorTan', 'taylorAsin', 'taylorAcos', 'taylorAtan', 'taylorSinh', 'taylorCosh', 'taylorTanh',
       'taylorAsinh', 'taylorAcosh', 'taylorAtanh', 'computeArg', 'computecongj', 'compute_abi', 'computePolar','tenPower',
-      'Rand',
+      'RanInt','RanSharp',
       `return ${expr};`
     );
 
@@ -804,7 +841,7 @@ const evaluateExpression = (expr) => {
       PI, E, factorial, abs, sqrt, divide, div_mul, cbrt, square, cube, x_yrt, makeNegative,
       computeLog10, computeLn, computeLogBase, computeIntegration, computeDerivative, computeSummation,
       taylorSin, taylorCos, taylorTan, taylorAsin, taylorAcos, taylorAtan, taylorSinh, taylorCosh, taylorTanh,
-      taylorAsinh, taylorAcosh, taylorAtanh, computeArg, computecongj, compute_abi, computePolar,tenPower,Rand
+      taylorAsinh, taylorAcosh, taylorAtanh, computeArg, computecongj, compute_abi, computePolar,tenPower,RanInt,RanSharp
     );
 
     console.log(`Evaluation result: ${result}`);

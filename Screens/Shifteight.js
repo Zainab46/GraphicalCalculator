@@ -84,7 +84,7 @@ function Shifteight({ navigation }) {
     navigation.navigate('Main', { question: questionText, answer: resultText });
   };
 
-  const showconversions = ({ item }) => {
+  const showconversions = ({ item }) => {    //item.id= LIST item
     const isSelected = selectedConversion && selectedConversion.id === item.id;
     return (
       <View style={{ width: "90%", borderRadius: 5, borderWidth: 1, backgroundColor: isSelected ? "#56585a" : "#434547", borderColor: "#83888d", marginVertical: 5, alignSelf: "center" }}>

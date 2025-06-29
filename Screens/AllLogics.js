@@ -863,28 +863,23 @@ export function tenPower(x) {
 }
 
 
-
 let seed = Date.now() % 1000000;
 
-// Rand function that mimics Casio's Rnd behavior
-export function Rand(n) {
+// Returns a float in [0, 1)
+export function RanSharp() {
   const a = 1664525;
   const c = 1013904223;
   const m = 4294967296;
 
   seed = (a * seed + c) % m;
-  const randomFloat = seed / m;
+  return seed / m;
+}
 
-  // If n is undefined → float between 0 and 1 (like Rnd())
-  if (n === undefined) {
-    return randomFloat;
+// Returns an integer between a and b (inclusive)
+export function RanInt(a, b) {
+  if (typeof a !== 'number' || typeof b !== 'number' || a > b) {
+    throw new Error('RanInt expects two numbers where a <= b');
   }
-
-  // If n is a number → return int in [0, n - 1]
-  if (typeof n === 'number' && n > 0) {
-    return Math.floor(randomFloat * n);  // No built-in alternative? use manual floor
-  }
-
-  // Invalid input
-  throw new Error("Rand() expects a positive number or no argument");
+  const range = b - a + 1;
+  return a + Math.floor(RanSharp() * range);
 }
