@@ -3,9 +3,9 @@ import { View, SafeAreaView, TextInput, StyleSheet, TouchableOpacity, Text, Imag
 import { factorial , PI,E,abs,sqrt, div_mul, divide, cbrt, square, cube, x_yrt,
   makeNegative, computeLog10, computeLn,computeLogBase, 
   computeSummation,taylorSin,taylorTan,taylorCos,taylorAsin,taylorAcos,taylorAtan,
-taylorSinh,taylorCosh,taylorTanh,taylorAsinh,taylorAcosh,taylorAtanh,
-computeArg,computecongj,compute_abi,computePolar,parseComplex,initDB,insertRecord,computeIntegration,computeDerivative,
+taylorSinh,taylorCosh,taylorTanh,taylorAsinh,taylorAcosh,taylorAtanh,initDB,insertRecord,computeIntegration,computeDerivative,
 Rand,advancedIntegration,symbolicDerivative,tenPower,RanSharp,RanInt} from "./Screens/AllLogics";
+import { computeArg,computecongj,compute_abi,computePolar } from "./Screens/ComplexModeLogics";
 
 
 
@@ -134,6 +134,7 @@ else if(shift===true && number==='8'){
 else if(shift===true && number==='2'&& ActualMode==='CMPLX'){
     navigation.navigate('ShiftTwo')
   }
+
 else if(shift===true && number==='0'){
   handleRand();
 }
@@ -475,6 +476,10 @@ else if(shift===true&& variable==='e' && alpha===false){
     setFirstPlaceholderPosition(currentPos + 4);
     setFunctionType('asin');
     setCursorPosition(currentPos + 5);
+   } 
+   else if(shift===true && variable==='i' && alpha===false && ActualMode==='CMPLX'){
+      setExpressionInput(expressionInput.substring(0, currentPos) + 'i' + expressionInput.substring(currentPos));
+      setCursorPosition(currentPos + 1);
    }
 
      
@@ -615,11 +620,11 @@ else if(eqvalues!=null){
 
   console.log('after= ' + shiftSeven);  // Will still show old value because it's not updated immediately
 }
-else if(shifttwo!=null){
-   const currentPos = cursorPosition !== null ? cursorPosition : expressionInput.length;
+else if (shifttwo != null) {
+  const currentPos = cursorPosition !== null ? cursorPosition : expressionInput.length;
   const newExpression = expressionInput.substring(0, currentPos) + shifttwo + expressionInput.substring(currentPos);
   setExpressionInput(newExpression);
-  setshifttwo(null)
+  setshifttwo(null);
 }
 
 else if (questions !== null && answers !== null) {
@@ -788,10 +793,11 @@ const evaluateExpression = (expr) => {
     expr = expr.replace(/Ln\(([^)]+)\)/g, 'computeLn($1)');
     expr = expr.replace(/log(\d+)\(([^)]+)\)/g, 'computeLogBase($2, $1)');
     expr = expr.replace(/∑\(([^,]+),([^,]+),([^,]+),([^)]+)\)/g, 'computeSummation($1, $2, $3, $4)');
-    expr = expr.replace(/arg\(([^)]+)\)/gi, 'computeArg($1)');
-    expr = expr.replace(/congj\(([^)]+)\)/gi, 'computecongj($1)');
-    expr = expr.replace(/([a-zA-Z0-9_]+)\s*▶\s*[^\s)]+/g, 'compute_abi($1)');
-    expr = expr.replace(/([a-zA-Z0-9_]+)\s*▶\s*[^)\s]+∠[^)\s]+/g, 'computePolar($1)');
+   expr = expr.replace(/arg\(([^)]+)\)/gi, 'computeArg($1)');
+   expr = expr.replace(/conjg\(([^)]+)\)/gi, 'computecongj($1)');
+   expr = expr.replace(/([a-zA-Z0-9_]+)\s*▶\s*a\+bi/gi, 'compute_abi($1)');
+  expr = expr.replace(/([a-zA-Z0-9_]+)\s*▶\s*r∠θ/gi, 'computePolar($1)');
+
 
     // Convert angles based on DRG mode for trigonometric functions
     if (typeof DRG !== 'undefined' && DRG !== 'RAD') {
@@ -898,7 +904,8 @@ const handleRand = () => {
     if (shift===true && expressionInput===''){
       navigation.navigate('History')
     }
-
+  
+    
     else if (baseresults) {
       setResult(baseresults);
       insertRecord(bases,baseresults)
@@ -937,6 +944,27 @@ const handleRand = () => {
       setShiftSeven(null);
       setShiftSeven2(null);
     }
+    
+ else if (shifttwo) {
+      // If user already typed something, use that; otherwise evaluate the token itself.
+      const fullExpr = expressionInput.trim() !== '' ? expressionInput : shifttwo;
+
+      const result = evaluateExpression(fullExpr);   // evaluateExpression already
+                                                     // does arg/Conjg/▶a+bi/▶r∠θ replacements
+
+      /* Guard against bad results */
+      if (typeof result !== 'number' || isNaN(result)) {
+        setResult('Error');
+      } else {
+        setResult(result.toString());
+        insertRecord(fullExpr, result.toString());
+        setLastResult(result.toString());
+      }
+
+      setshifttwo(null);   // clear for next round
+      return;
+    }
+
     // Normal equation evaluation
     else if (expressionInput) {
   const result = evaluateExpression(expressionInput);
@@ -1277,7 +1305,8 @@ return (
               <Text style={{color:'white'}}>i     cot</Text>
             </View>
           </View>
-          <TouchableOpacity style={{alignItems:'center',backgroundColor:'#D9D9D9', borderRadius:10,height:25,width:52,marginTop:1}}>
+          <TouchableOpacity style={{alignItems:'center',backgroundColor:'#D9D9D9', borderRadius:10,height:25,width:52,marginTop:1}}
+          onPress={()=>{HandleVariables('i')}}>
             <Text style={{fontSize:16,fontWeight:'bold'}}>ENG</Text>
           </TouchableOpacity>
         </View>

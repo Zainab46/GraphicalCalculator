@@ -466,8 +466,6 @@ export function parseComplex(str) {
   return [parseFloat(match[1]), parseFloat(match[2])];
 }
 
-//sql working
-
 export const initDB = async () => {
   try {
     db = await SQLite.openDatabase({ name: DB_NAME, location: 'default' });
@@ -476,7 +474,8 @@ export const initDB = async () => {
       `CREATE TABLE IF NOT EXISTS records (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         expression TEXT NOT NULL,
-        result TEXT NOT NULL
+        result TEXT NOT NULL,
+        timestamp TEXT DEFAULT (datetime('now', 'localtime'))
       );`
     );
 
@@ -488,8 +487,13 @@ export const initDB = async () => {
 
 export const insertRecord = async (expression = null, result = null) => {
   try {
+    if (!db) {
+      db = await SQLite.openDatabase({ name: DB_NAME, location: 'default' });
+    }
+
+    const now = new Date().toLocaleString(); // e.g., "7/4/2025, 5:32:21 PM"
+
     if (expression && !result) {
-      // Save only the expression
       const results = await db.executeSql('SELECT COUNT(*) AS count FROM records');
       const count = results[0].rows.item(0).count;
 
@@ -497,29 +501,33 @@ export const insertRecord = async (expression = null, result = null) => {
         const first = await db.executeSql('SELECT id FROM records ORDER BY id ASC LIMIT 1');
         const firstId = first[0].rows.item(0).id;
 
-        await db.executeSql('UPDATE records SET expression = ?, result = NULL WHERE id = ?', [
-          expression,
-          firstId,
-        ]);
+        await db.executeSql(
+          'UPDATE records SET expression = ?, result = NULL, timestamp = ? WHERE id = ?',
+          [expression, now, firstId]
+        );
       } else {
-        await db.executeSql('INSERT INTO records (expression) VALUES (?)', [expression]);
+        await db.executeSql(
+          'INSERT INTO records (expression, result, timestamp) VALUES (?, NULL, ?)',
+          [expression, now]
+        );
       }
 
     } else if (!expression && result) {
-      // Save only the result into latest null-result record
       const res = await db.executeSql(
         'SELECT id FROM records WHERE result IS NULL ORDER BY id DESC LIMIT 1'
       );
 
       if (res[0].rows.length > 0) {
         const idToUpdate = res[0].rows.item(0).id;
-        await db.executeSql('UPDATE records SET result = ? WHERE id = ?', [result, idToUpdate]);
+        await db.executeSql(
+          'UPDATE records SET result = ?, timestamp = ? WHERE id = ?',
+          [result, now, idToUpdate]
+        );
       } else {
         console.warn('No pending expression found to attach result to.');
       }
 
     } else if (expression && result) {
-      // Both provided: Normal logic
       const results = await db.executeSql('SELECT COUNT(*) AS count FROM records');
       const count = results[0].rows.item(0).count;
 
@@ -527,16 +535,15 @@ export const insertRecord = async (expression = null, result = null) => {
         const first = await db.executeSql('SELECT id FROM records ORDER BY id ASC LIMIT 1');
         const firstId = first[0].rows.item(0).id;
 
-        await db.executeSql('UPDATE records SET expression = ?, result = ? WHERE id = ?', [
-          expression,
-          result,
-          firstId,
-        ]);
+        await db.executeSql(
+          'UPDATE records SET expression = ?, result = ?, timestamp = ? WHERE id = ?',
+          [expression, result, now, firstId]
+        );
       } else {
-        await db.executeSql('INSERT INTO records (expression, result) VALUES (?, ?)', [
-          expression,
-          result,
-        ]);
+        await db.executeSql(
+          'INSERT INTO records (expression, result, timestamp) VALUES (?, ?, ?)',
+          [expression, result, now]
+        );
       }
     }
   } catch (error) {
@@ -546,6 +553,10 @@ export const insertRecord = async (expression = null, result = null) => {
 
 export const fetchRecords = async () => {
   try {
+    if (!db) {
+      db = await SQLite.openDatabase({ name: DB_NAME, location: 'default' });
+    }
+
     const results = await db.executeSql('SELECT * FROM records ORDER BY id ASC');
     const rows = results[0].rows;
     let data = [];
@@ -558,10 +569,29 @@ export const fetchRecords = async () => {
     return [];
   }
 };
-export const deleteRecordById = async (id) => {
-  if (!db) db = await SQLite.openDatabase({ name: 'base_converter.db', location: 'default' });
 
-  await db.executeSql('DELETE FROM records WHERE id = ?', [id]);
+export const deleteRecordById = async (id) => {
+  try {
+    if (!db) {
+      db = await SQLite.openDatabase({ name: DB_NAME, location: 'default' });
+    }
+
+    await db.executeSql('DELETE FROM records WHERE id = ?', [id]);
+  } catch (error) {
+    console.error('Delete by ID error:', error);
+  }
+};
+
+export const deleteAllRecords = async () => {
+  try {
+    if (!db) {
+      db = await SQLite.openDatabase({ name: DB_NAME, location: 'default' });
+    }
+
+    await db.executeSql('DELETE FROM records');
+  } catch (error) {
+    console.error('Delete all error:', error);
+  }
 };
 
 export function computeIntegration(a, b, functionExpr) {
@@ -882,4 +912,33 @@ export function RanInt(a, b) {
   }
   const range = b - a + 1;
   return a + Math.floor(RanSharp() * range);
+}
+
+//////////////////////////////////////////////////////////////////////
+
+function convertDecimalToDMS(decimal) {
+  const degrees = Math.floor(decimal);
+  const remaining = (decimal - degrees) * 60;
+  const minutes = Math.floor(remaining);
+  const seconds = Math.round((remaining - minutes) * 60);
+
+  return `${degrees}°${minutes}'${seconds}"`; // 
+}
+
+function toggleDMSDisplay(currentValue, originalDecimal) {
+  if (!currentValue) {
+    return { output: "°", updatedOriginal: null }; 
+  }
+
+  if (!isNaN(parseFloat(currentValue))) {
+    const decimal = parseFloat(currentValue);
+    const dms = convertDecimalToDMS(decimal);
+    return { output: dms, updatedOriginal: currentValue };
+  }
+
+  if (currentValue.includes("°") && originalDecimal !== null) {
+    return { output: originalDecimal, updatedOriginal: null };
+  }
+
+  return { output: currentValue, updatedOriginal: originalDecimal };
 }

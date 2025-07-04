@@ -8,10 +8,10 @@ function ShiftTwo({navigation,route}){
         navigation.navigate('Main',{complxvalues:value});
     }
     else if(id=='2'){
-        navigation.navigate('Main',{complxvalue:value});
+        navigation.navigate('Main',{complxvalues:value});
     }
     else  if(id=='3'){
-        navigation.navigate('Main',{complxvalues:value});
+         navigation.navigate('Main',{complxvalues:value});
     }
      else  if(id=='4'){
         navigation.navigate('Main',{complxvalues:value});

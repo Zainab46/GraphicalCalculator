@@ -1,30 +1,53 @@
 import React, { useEffect, useState } from 'react';
-import { View, FlatList, Text, StyleSheet ,TouchableOpacity,Alert} from 'react-native';
-import { fetchRecords,deleteRecordById } from './AllLogics'; // Update with correct path
+import { View, FlatList, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { fetchRecords, deleteRecordById, deleteAllRecords } from './AllLogics'; // Adjust path if needed
 
 export default function HistoryScreen() {
   const [records, setRecords] = useState([]);
 
-  useEffect(() => {
-    const loadRecords = async () => {
-      const data = await fetchRecords();
-      setRecords(data);
-    };
+  const loadRecords = async () => {
+    const data = await fetchRecords();
+    setRecords(data);
+  };
 
+  useEffect(() => {
     loadRecords();
   }, []);
 
- const handleDelete = async (id) => {
+  const handleDelete = async (id) => {
     await deleteRecordById(id);
-    setRecords((prev) => prev.filter((item) => item.id !== id)); // update state to reflect deletion
+    setRecords((prev) => prev.filter((item) => item.id !== id));
   };
-
   
+const handleDeleteAll = () => {
+  Alert.alert(
+    'Delete All',
+    'Are you sure you want to delete all history records?',
+    [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete All',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteAllRecords();
+            setRecords([]);
+          } catch (error) {
+            console.error('Failed to delete all:', error);
+          }
+        },
+      },
+    ]
+  );
+};
+
+
   const renderItem = ({ item }) => (
     <View style={styles.itemContainer}>
       <View style={styles.textContainer}>
         <Text style={styles.expression}>{item.expression}</Text>
         <Text style={styles.result}>{item.result ?? 'Pending...'}</Text>
+        <Text style={styles.timestamp}>{item.timestamp}</Text>
       </View>
       <TouchableOpacity
         style={styles.deleteButton}
@@ -46,10 +69,17 @@ export default function HistoryScreen() {
 
   return (
     <View style={styles.container}>
+      <TouchableOpacity style={styles.clearAllButton} onPress={handleDeleteAll}>
+        <Text style={styles.clearAllText}>🧹 Clear All</Text>
+      </TouchableOpacity>
+
       <FlatList
         data={records}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderItem}
+        ListEmptyComponent={
+          <Text style={styles.emptyMessage}>No history found.</Text>
+        }
       />
     </View>
   );
@@ -60,6 +90,18 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#111',
     padding: 16,
+  },
+  clearAllButton: {
+    backgroundColor: '#800',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 12,
+    alignItems: 'center',
+  },
+  clearAllText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   itemContainer: {
     backgroundColor: '#333',
@@ -83,6 +125,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#0af',
   },
+  timestamp: {
+    fontSize: 12,
+    color: '#bbb',
+    marginTop: 4,
+  },
   deleteButton: {
     backgroundColor: '#a00',
     padding: 8,
@@ -91,5 +138,11 @@ const styles = StyleSheet.create({
   deleteText: {
     color: '#fff',
     fontSize: 16,
+  },
+  emptyMessage: {
+    color: '#888',
+    fontSize: 16,
+    textAlign: 'center',
+    marginTop: 40,
   },
 });

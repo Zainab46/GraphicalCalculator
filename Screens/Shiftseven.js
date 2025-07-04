@@ -153,18 +153,13 @@ return(
     
 </TouchableOpacity>
 
-
 </View>
 );
   }  
-
-
-
 }
-       keyExtractor={(item,index)=>index.toString()}
-       >
-       
-       </FlatList>
+keyExtractor={(item,index)=>index.toString()}
+ >
+   </FlatList>
     </View>
 );
 
