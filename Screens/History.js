@@ -41,31 +41,56 @@ const handleDeleteAll = () => {
   );
 };
 
+const formatTimestamp = (timestamp) => {
+  // Expecting format: "MM/DD/YYYY, HH:mm:ss"
+  const [datePart, timePart] = timestamp.split(', ');
+  if (!datePart || !timePart) return timestamp;
+
+  const [month, day, year] = datePart.split('/').map(Number);
+  const [hourStr, minuteStr] = timePart.split(':');
+  let hour = parseInt(hourStr, 10);
+  const minute = parseInt(minuteStr, 10);
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+
+  if (hour === 0) hour = 12;
+  else if (hour > 12) hour -= 12;
+
+  const months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
+  const monthName = months[month - 1];
+
+  return `${monthName} ${String(day).padStart(2, '0')}, ${year}, ${hour}:${String(minute).padStart(2, '0')} ${ampm}`;
+};
+
 
   const renderItem = ({ item }) => (
-    <View style={styles.itemContainer}>
-      <View style={styles.textContainer}>
-        <Text style={styles.expression}>{item.expression}</Text>
-        <Text style={styles.result}>{item.result ?? 'Pending...'}</Text>
-        <Text style={styles.timestamp}>{item.timestamp}</Text>
-      </View>
-      <TouchableOpacity
-        style={styles.deleteButton}
-        onPress={() => {
-          Alert.alert(
-            'Confirm Deletion',
-            'Are you sure you want to delete this record?',
-            [
-              { text: 'Cancel', style: 'cancel' },
-              { text: 'Delete', style: 'destructive', onPress: () => handleDelete(item.id) },
-            ]
-          );
-        }}
-      >
-        <Text style={styles.deleteText}>🗑</Text>
-      </TouchableOpacity>
+  <View style={styles.itemContainer}>
+    <View style={styles.textContainer}>
+      <Text style={styles.expression}>{item.expression}</Text>
+      <Text style={styles.result}>{item.result ?? 'Pending...'}</Text>
+      <Text style={styles.timestamp}>{formatTimestamp(item.timestamp)}</Text>
     </View>
-  );
+    <TouchableOpacity
+      style={styles.deleteButton}
+      onPress={() => {
+        Alert.alert(
+          'Confirm Deletion',
+          'Are you sure you want to delete this record?',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Delete', style: 'destructive', onPress: () => handleDelete(item.id) },
+          ]
+        );
+      }}
+    >
+      <Text style={styles.deleteText}>🗑</Text>
+    </TouchableOpacity>
+  </View>
+);
+
 
   return (
     <View style={styles.container}>

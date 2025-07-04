@@ -466,6 +466,16 @@ export function parseComplex(str) {
   return [parseFloat(match[1]), parseFloat(match[2])];
 }
 
+const checkTimestampColumn = async () => {
+  const result = await db.executeSql(`PRAGMA table_info(records)`);
+  const hasTimestamp = result[0].rows.raw().some(col => col.name === 'timestamp');
+
+  if (!hasTimestamp) {
+    await db.executeSql(`ALTER TABLE records ADD COLUMN timestamp TEXT`);
+  }
+};
+
+
 export const initDB = async () => {
   try {
     db = await SQLite.openDatabase({ name: DB_NAME, location: 'default' });
@@ -474,10 +484,11 @@ export const initDB = async () => {
       `CREATE TABLE IF NOT EXISTS records (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         expression TEXT NOT NULL,
-        result TEXT NOT NULL,
-        timestamp TEXT DEFAULT (datetime('now', 'localtime'))
+        result TEXT NOT NULL
       );`
     );
+
+    await checkTimestampColumn(); // 🔁 Add timestamp column if missing
 
     return db;
   } catch (error) {
@@ -485,7 +496,7 @@ export const initDB = async () => {
   }
 };
 
-export const insertRecord = async (expression = null, result = null) => {
+export const insertRecord = async (expression, result) => {
   try {
     if (!db) {
       db = await SQLite.openDatabase({ name: DB_NAME, location: 'default' });

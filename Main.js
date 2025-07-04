@@ -761,7 +761,7 @@ const evaluateExpression = (expr) => {
     return x0 ? `computeDerivative("${fx}", ${x0})` : `computeDerivative("${fx}")`;
   });
 
-  console.log(`After integration/differentiation replacement: ${expr}`);
+  //console.log(`After integration/differentiation replacement: ${expr}`);
 
   // Replace operators for JavaScript evaluation (only if not already handled)
   if (!expr.includes('computeIntegration') && !expr.includes('computeDerivative')) {
@@ -825,7 +825,7 @@ const evaluateExpression = (expr) => {
      expr = expr.replace(/π/g, 'PI');
     expr = expr.replace(/e/g, 'E')
     expr = expr.replace(/10\^(\d+(\.\d+)?|\([^()]*\))/g, 'tenPower($1)');
-    expr = expression.replace(/Rand\(\)/g, () => RanSharp());
+    expr = expr.replace(/Rand\(\)/g, () => RanSharp());
   expr = expr.replace(/RanInt\((\d+),\s*(\d+)\)/g, (_, a, b) => RanInt(Number(a), Number(b)))
 
 
@@ -1127,7 +1127,7 @@ return (
 
         <View>
           <Text></Text>
-          <TouchableOpacity style={{alignItems:'center',marginLeft:10,backgroundColor:'#D9D9D9', borderRadius:10,height:25,width:50}}>
+          <TouchableOpacity style={{alignItems:'center',marginLeft:10,backgroundColor:'#D9D9D9', borderRadius:10,height:25,width:50}} onPress={()=>{handleEquals()}}>
             <Image source={require('./Assets/upArrow.png')} style={{height:15,width:15,marginTop:4}}></Image> 
           </TouchableOpacity>
         </View>
