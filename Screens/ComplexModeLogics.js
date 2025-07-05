@@ -85,3 +85,34 @@ export function computePolar(varName) {
   const theta = atan2(b, a) * 180 / Math.PI;
   return { r: r.toFixed(4), theta: theta.toFixed(4) }; // in degrees
 }
+
+
+
+//////////////////////////////////////////////////////////////////////
+
+function convertDecimalToDMS(decimal) {
+  const degrees = Math.floor(decimal);
+  const remaining = (decimal - degrees) * 60;
+  const minutes = Math.floor(remaining);
+  const seconds = Math.round((remaining - minutes) * 60);
+
+  return `${degrees}°${minutes}'${seconds}"`; // 
+}
+
+function toggleDMSDisplay(currentValue, originalDecimal) {
+  if (!currentValue) {
+    return { output: "°", updatedOriginal: null }; 
+  }
+
+  if (!isNaN(parseFloat(currentValue))) {
+    const decimal = parseFloat(currentValue);
+    const dms = convertDecimalToDMS(decimal);
+    return { output: dms, updatedOriginal: currentValue };
+  }
+
+  if (currentValue.includes("°") && originalDecimal !== null) {
+    return { output: originalDecimal, updatedOriginal: null };
+  }
+
+  return { output: currentValue, updatedOriginal: originalDecimal };
+}

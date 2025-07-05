@@ -945,25 +945,6 @@ const handleRand = () => {
       setShiftSeven2(null);
     }
     
- else if (shifttwo) {
-      // If user already typed something, use that; otherwise evaluate the token itself.
-      const fullExpr = expressionInput.trim() !== '' ? expressionInput : shifttwo;
-
-      const result = evaluateExpression(fullExpr);   // evaluateExpression already
-                                                     // does arg/Conjg/▶a+bi/▶r∠θ replacements
-
-      /* Guard against bad results */
-      if (typeof result !== 'number' || isNaN(result)) {
-        setResult('Error');
-      } else {
-        setResult(result.toString());
-        insertRecord(fullExpr, result.toString());
-        setLastResult(result.toString());
-      }
-
-      setshifttwo(null);   // clear for next round
-      return;
-    }
 
     // Normal equation evaluation
     else if (expressionInput) {
