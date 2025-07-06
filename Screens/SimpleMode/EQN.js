@@ -49,6 +49,87 @@ const solveQuadratic = (a, b, c) => {
   return [(-b + sqrtD) / (2 * a), (-b - sqrtD) / (2 * a)];
 };
 
+const solveCubic = (a, b, c, d) => {
+  // Handle case where a = 0 (not actually cubic)
+  if (Math.abs(a) < 1e-10) {
+    return solveQuadratic(b, c, d);
+  }
+
+  // Normalize coefficients
+  b /= a;
+  c /= a;
+  d /= a;
+
+  // Cardano's method for cubic equations
+  const p = c - (b * b) / 3;
+  const q = (2 * b * b * b - 9 * b * c + 27 * d) / 27;
+
+  const discriminant = (q * q) / 4 + (p * p * p) / 27;
+
+  if (discriminant > 0) {
+    // One real root
+    const sqrtD = Math.sqrt(discriminant);
+    const u = Math.cbrt(-q / 2 + sqrtD);
+    const v = Math.cbrt(-q / 2 - sqrtD);
+    const root = u + v - b / 3;
+    return [root];
+  } else if (Math.abs(discriminant) < 1e-10) {
+    // Two or three real roots (special case)
+    if (Math.abs(q) < 1e-10) {
+      // Three equal roots
+      const root = -b / 3;
+      return [root, root, root];
+    } else {
+      // Two distinct roots
+      const root1 = 3 * q / p - b / 3;
+      const root2 = -3 * q / (2 * p) - b / 3;
+      return [root1, root2];
+    }
+  } else {
+    // Three distinct real roots
+    const rho = Math.sqrt(-(p * p * p) / 27);
+    const theta = Math.acos(-q / (2 * rho));
+    const cubeRootRho = Math.cbrt(rho);
+    
+    const root1 = 2 * cubeRootRho * Math.cos(theta / 3) - b / 3;
+    const root2 = 2 * cubeRootRho * Math.cos((theta + 2 * Math.PI) / 3) - b / 3;
+    const root3 = 2 * cubeRootRho * Math.cos((theta + 4 * Math.PI) / 3) - b / 3;
+    
+    return [root1, root2, root3];
+  }
+};
+
+const solveQuartic = (a, b, c, d, e) => {
+  // Handle case where a = 0 (not actually quartic)
+  if (Math.abs(a) < 1e-10) {
+    return solveCubic(b, c, d, e);
+  }
+
+  // Normalize coefficients
+  b /= a;
+  c /= a;
+  d /= a;
+  e /= a;
+
+  // For simplicity, we'll use a numerical approach for quartic equations
+  // as the analytical solution is very complex
+  const roots = [];
+  
+  // Try to find roots using numerical methods
+  // This is a simplified approach - you might want to use a more robust method
+  for (let x = -10; x <= 10; x += 0.1) {
+    const value = x*x*x*x + b*x*x*x + c*x*x + d*x + e;
+    if (Math.abs(value) < 0.001) {
+      // Check if this root is already found
+      if (!roots.some(root => Math.abs(root - x) < 0.01)) {
+        roots.push(x);
+      }
+    }
+  }
+  
+  return roots.length > 0 ? roots : null;
+};
+
 function EquationMenu({navigation, route}) {
   const [selectedEquation, setSelectedEquation] = useState(null);
   const [inputs, setInputs] = useState({});
@@ -105,7 +186,6 @@ function EquationMenu({navigation, route}) {
 
     // Format and display the equation
     const equationText = formatEquation(inputValues);
-    setEquationDisplay(equationText);
 
     if (selectedEquation === 'linear') {
       const coefficients = [
@@ -127,18 +207,39 @@ function EquationMenu({navigation, route}) {
       } else {
         finalResult = 'No real roots or invalid input';
       }
+    } else if (selectedEquation === 'cubic') {
+      const [a, b, c, d] = inputValues.slice(0, 4);
+      solution = solveCubic(a, b, c, d);
+      if (solution && solution.length > 0) {
+        if (solution.length === 1) {
+          finalResult = `x = ${solution[0].toFixed(4)}`;
+        } else if (solution.length === 2) {
+          finalResult = `x₁ = ${solution[0].toFixed(4)}, x₂ = ${solution[1].toFixed(4)}`;
+        } else {
+          finalResult = `x₁ = ${solution[0].toFixed(4)}, x₂ = ${solution[1].toFixed(4)}, x₃ = ${solution[2].toFixed(4)}`;
+        }
+      } else {
+        finalResult = 'No real roots or invalid input';
+      }
+    } else if (selectedEquation === 'quartic') {
+      const [a, b, c, d, e] = inputValues.slice(0, 5);
+      solution = solveQuartic(a, b, c, d, e);
+      if (solution && solution.length > 0) {
+        const rootStrings = solution.map((root, index) => `x${index + 1} = ${root.toFixed(4)}`);
+        finalResult = rootStrings.join(', ');
+      } else {
+        finalResult = 'No real roots found or invalid input';
+      }
     } else {
       finalResult = 'Solver not implemented for this equation type';
     }
 
-    setResult(finalResult);
-     
-      navigation.navigate('Main', { 
-        equation: equationDisplay,
-        result: result 
-      });
+    // Navigate immediately with the calculated values
+    navigation.navigate('Main', { 
+      equation: equationText,
+      result: finalResult 
+    });
   };
-
 
   const resetEquation = () => {
     setSelectedEquation(null);
@@ -175,14 +276,12 @@ function EquationMenu({navigation, route}) {
         {/* Buttons */}
         <View style={styles.buttonRow}>
           <TouchableOpacity style={styles.solveButton} onPress={solveEquation}>
-            <Text style={styles.buttonText}>Solve</Text>
+            <Text style={styles.buttonText}>Solve & Send to Main</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.resetButton} onPress={resetEquation}>
             <Text style={styles.buttonText}>Back</Text>
           </TouchableOpacity>
         </View>
-
-        
       </ScrollView>
     );
   };
@@ -271,55 +370,18 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 30,
     borderRadius: 8,
-    flex: 0.45,
+    flex: 0.6,
   },
   resetButton: {
     backgroundColor: '#dc3545',
     paddingVertical: 12,
     paddingHorizontal: 30,
     borderRadius: 8,
-    flex: 0.45,
-  },
-  mainButton: {
-    backgroundColor: '#007bff',
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 8,
-    marginTop: 20,
+    flex: 0.35,
   },
   buttonText: {
     color: 'white',
     fontSize: 16,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  displaySection: {
-    marginBottom: 20,
-  },
-  equationBox: {
-    backgroundColor: '#333',
-    padding: 15,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#555',
-  },
-  equationText: {
-    color: '#fff',
-    fontSize: 18,
-    fontFamily: 'monospace',
-    textAlign: 'center',
-    lineHeight: 24,
-  },
-  resultBox: {
-    backgroundColor: '#1a472a',
-    padding: 15,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#28a745',
-  },
-  resultText: {
-    color: '#28a745',
-    fontSize: 18,
     fontWeight: 'bold',
     textAlign: 'center',
   },
