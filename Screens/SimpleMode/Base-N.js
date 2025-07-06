@@ -6,7 +6,8 @@ function BaseN({ navigation }) {
   const [input1, setInput1] = useState("");
   const [input2, setInput2] = useState("");
   const [selectedOp, setSelectedOp] = useState("XOR");
-  const [base, setBase] = useState("DEC");
+  const [fromBase, setFromBase] = useState("BIN"); // Input base
+  const [toBase, setToBase] = useState("DEC");     // Output base
 
   const baseMap = {
     BIN: 2,
@@ -24,7 +25,7 @@ function BaseN({ navigation }) {
 
   const handleInput = (text, setter) => {
     const upper = text.toUpperCase();
-    const valid = validChars[base];
+    const valid = validChars[fromBase];
     if (upper.split("").every((char) => valid.includes(char))) {
       setter(upper);
     }
@@ -32,13 +33,14 @@ function BaseN({ navigation }) {
 
   const convert = () => {
     try {
-      const fromBase = baseMap[base];
+      const inputBase = baseMap[fromBase];
+      const outputBase = baseMap[toBase];
 
       // Convert mode
       if (mode === "convert") {
-        const decimal = parseInt(input1, fromBase);
-        const result = decimal.toString(fromBase).toUpperCase();
-        const label = `${input1} ${base}`;
+        const decimal = parseInt(input1, inputBase);
+        const result = decimal.toString(outputBase).toUpperCase();
+        const label = `${input1} ${fromBase} → ${toBase}`;
         navigation.navigate("Main", {
           base: label,
           baseresult: result,
@@ -47,8 +49,8 @@ function BaseN({ navigation }) {
 
       // Logic mode
       else {
-        const val1 = parseInt(input1, fromBase) >>> 0;
-        const val2 = parseInt(input2, fromBase) >>> 0;
+        const val1 = parseInt(input1, inputBase) >>> 0;
+        const val2 = parseInt(input2, inputBase) >>> 0;
         let result;
 
         switch (selectedOp) {
@@ -74,11 +76,11 @@ function BaseN({ navigation }) {
             result = 0;
         }
 
-        const output = result.toString(fromBase).toUpperCase();
+        const output = result.toString(outputBase).toUpperCase();
         const label =
           selectedOp === "NOT" || selectedOp === "NEG"
-            ? `${selectedOp} ${input1}`
-            : `${input1} ${selectedOp} ${input2}`;
+            ? `${selectedOp} ${input1} (${fromBase})`
+            : `${input1} ${selectedOp} ${input2} (${fromBase})`;
 
         navigation.navigate("Main", {
           base: label,
@@ -106,51 +108,90 @@ function BaseN({ navigation }) {
         ))}
       </View>
 
-      <View style={styles.row}>
-        <Text style={styles.label}>Base:</Text>
-        {["BIN", "OCT", "DEC", "HEX"].map((b) => (
-          <TouchableOpacity
-            key={b}
-            style={[styles.baseButton, base === b && styles.selected]}
-            onPress={() => setBase(b)}
-          >
-            <Text style={styles.baseText}>{b}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      {mode === "convert" ? (
+        <>
+          <View style={styles.row}>
+            <Text style={styles.label}>From:</Text>
+            {["BIN", "OCT", "DEC", "HEX"].map((b) => (
+              <TouchableOpacity
+                key={b}
+                style={[styles.baseButton, fromBase === b && styles.selected]}
+                onPress={() => setFromBase(b)}
+              >
+                <Text style={styles.baseText}>{b}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
 
-      <TextInput
-        style={styles.input}
-        value={input1}
-        onChangeText={(text) => handleInput(text, setInput1)}
-        placeholder={`Enter first ${base} value`}
-        placeholderTextColor="#888"
-        autoCapitalize="characters"
-      />
+          <View style={styles.row}>
+            <Text style={styles.label}>To:</Text>
+            {["BIN", "OCT", "DEC", "HEX"].map((b) => (
+              <TouchableOpacity
+                key={b}
+                style={[styles.baseButton, toBase === b && styles.selected]}
+                onPress={() => setToBase(b)}
+              >
+                <Text style={styles.baseText}>{b}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
 
-      {mode === "logic" && selectedOp !== "NOT" && selectedOp !== "NEG" && (
-        <TextInput
-          style={styles.input}
-          value={input2}
-          onChangeText={(text) => handleInput(text, setInput2)}
-          placeholder={`Enter second ${base} value`}
-          placeholderTextColor="#888"
-          autoCapitalize="characters"
-        />
-      )}
+          <TextInput
+            style={styles.input}
+            value={input1}
+            onChangeText={(text) => handleInput(text, setInput1)}
+            placeholder={`Enter ${fromBase} value`}
+            placeholderTextColor="#888"
+            autoCapitalize="characters"
+          />
+        </>
+      ) : (
+        <>
+          <View style={styles.row}>
+            <Text style={styles.label}>Base:</Text>
+            {["BIN", "OCT", "DEC", "HEX"].map((b) => (
+              <TouchableOpacity
+                key={b}
+                style={[styles.baseButton, fromBase === b && styles.selected]}
+                onPress={() => setFromBase(b)}
+              >
+                <Text style={styles.baseText}>{b}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
 
-      {mode === "logic" && (
-        <View style={styles.row}>
-          {["XOR", "OR", "AND", "XNOR", "NOT", "NEG"].map((op) => (
-            <TouchableOpacity
-              key={op}
-              style={[styles.opButton, selectedOp === op && styles.selected]}
-              onPress={() => setSelectedOp(op)}
-            >
-              <Text style={styles.baseText}>{op}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+          <TextInput
+            style={styles.input}
+            value={input1}
+            onChangeText={(text) => handleInput(text, setInput1)}
+            placeholder={`Enter first ${fromBase} value`}
+            placeholderTextColor="#888"
+            autoCapitalize="characters"
+          />
+
+          {selectedOp !== "NOT" && selectedOp !== "NEG" && (
+            <TextInput
+              style={styles.input}
+              value={input2}
+              onChangeText={(text) => handleInput(text, setInput2)}
+              placeholder={`Enter second ${fromBase} value`}
+              placeholderTextColor="#888"
+              autoCapitalize="characters"
+            />
+          )}
+
+          <View style={styles.row}>
+            {["XOR", "OR", "AND", "XNOR", "NOT", "NEG"].map((op) => (
+              <TouchableOpacity
+                key={op}
+                style={[styles.opButton, selectedOp === op && styles.selected]}
+                onPress={() => setSelectedOp(op)}
+              >
+                <Text style={styles.baseText}>{op}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </>
       )}
 
       <TouchableOpacity style={styles.calculateButton} onPress={convert}>
