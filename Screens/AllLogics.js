@@ -5,8 +5,292 @@ SQLite.enablePromise(true);
 const DB_NAME = 'base_converter.db';
 let db;
 // Constants
-export const PI = 3.141592653589793;
-export const E = 2.718281828459045;
+const PI = 3.141592653589793;
+const E = 2.718281828459045;
+export const config = {
+  mode: "DEG"
+};
+
+// Helper function to convert input to radians based on current mode
+const inputToRadians = (input) => {
+  if (config.mode === "DEG") {
+    return input * PI / 180;
+  } else if (config.mode === "RAD") {
+    return input;
+  } else if (config.mode === "GRAD") {
+    return input * PI / 200;
+  } else {
+    return input * PI / 180; // Default to degrees
+  }
+};
+
+// Helper function to convert radians to output based on current mode
+const radiansToOutput = (radians) => {
+  if (config.mode === "DEG") {
+    return radians * 180 / PI;
+  } else if (config.mode === "RAD") {
+    return radians;
+  } else if (config.mode === "GRAD") {
+    return radians * 200 / PI;
+  } else {
+    return radians * 180 / PI; // Default to degrees
+  }
+};
+
+// Helper function for square root using Newton's method
+export const sqrt = (x) => {
+  if (x < 0) return NaN;
+  if (x === 0) return 0;
+  
+  let guess = x / 2;
+  let prev = 0;
+  
+  while (Math.abs(guess - prev) > 1e-15) {
+    prev = guess;
+    guess = (guess + x / guess) / 2;
+  }
+  
+  return guess;
+};
+
+// Natural logarithm using Taylor series
+export const computeLn = (x, terms = 20) => {
+    if (x <= 0) return NaN;
+
+    // Transform x to ln(1 + y) using y = (x-1)/(x+1)
+    let y = (x - 1) / (x + 1);
+    let y2 = y * y;
+    let sum = 0;
+
+    for (let n = 1; n <= terms * 2; n += 2) {
+      sum += (1 / n) * Math.pow(y, n);
+    }
+
+    return 2 * sum;
+};
+
+// Log base 10
+export const computeLog10 = (x, terms = 20) => {
+  const ln10 = computeLn(10, terms);
+  const lnX = computeLn(x, terms);
+  return lnX / ln10;
+};
+
+// Log with custom base
+export const computeLogBase = (x, base, terms = 20) => {
+  const lnX = computeLn(x, terms);
+  const lnBase = computeLn(base, terms);
+  return lnX / lnBase;
+};
+
+// Summation function
+export const computeSummation = (variable, start, end, expression) => {
+  let sum = 0;
+
+  for (let i = Number(start); i <= Number(end); i++) {
+    const evalExpr = expression.replaceAll(variable, `(${i})`);
+    sum += Function(`return ${evalExpr}`)();
+  }
+
+  return sum;
+};
+
+// Floor function
+export const floor = (x) => {
+  return x >= 0 ? ~~x : ~~x - 1;
+};
+
+// Function to normalize angle to [-π, π]
+export const normalizeAngle = (radians) => {
+  const twoPi = 2 * PI;
+  return radians - twoPi * floor((radians + PI) / twoPi);
+};
+
+// SINE function using Taylor series - HIGH PRECISION
+export const taylorSin = (input) => {
+  const x = normalizeAngle(inputToRadians(input));
+  
+  let sum = 0;
+  let term = x;
+  let n = 0;
+  
+  // Use more terms for better precision
+  while (Math.abs(term) > 1e-16 && n < 50) {
+    sum += term;
+    n++;
+    term *= -x * x / ((2 * n) * (2 * n + 1));
+  }
+  return sum;
+};
+
+// COSINE function using Taylor series - HIGH PRECISION
+export const taylorCos = (input) => {
+  const x = normalizeAngle(inputToRadians(input));
+  
+  let sum = 1;
+  let term = 1;
+  let n = 0;
+  
+  // Use more terms for better precision
+  while (Math.abs(term) > 1e-16 && n < 50) {
+    n++;
+    term *= -x * x / ((2 * n - 1) * (2 * n));
+    sum += term;
+  }
+  return sum;
+};
+
+// TANGENT function using sine and cosine
+export const taylorTan = (input) => {
+  const x = normalizeAngle(inputToRadians(input));
+  
+  // Check for values close to π/2 + nπ where tangent is undefined
+  if (Math.abs(Math.abs(x) - PI/2) < 1e-10) {
+    return Infinity * Math.sign(x);
+  }
+  
+  const sinVal = taylorSin(input);
+  const cosVal = taylorCos(input);
+  
+  if (Math.abs(cosVal) < 1e-15) {
+    return Infinity * Math.sign(sinVal);
+  }
+  return sinVal / cosVal;
+};
+
+// Enhanced trigonometric functions with domain validation
+export const taylorAcos = (x) => {
+  if (typeof x !== 'number' || isNaN(x)) {
+    throw new Error(`Invalid input for cos⁻¹: ${x}. Input must be a number.`);
+  }
+  if (x < -1 || x > 1) {
+    throw new Error(`Domain error for cos⁻¹: ${x}. Input must be between -1 and 1.`);
+  }
+  
+  let result = Math.acos(x); // Result in radians
+  
+  // Convert to degrees if your calculator is in degree mode
+  // Uncomment the next line if you want degree output
+  // result = result * (180 / Math.PI);
+  
+  return result;
+};
+
+export const taylorAsin = (x) => {
+  if (typeof x !== 'number' || isNaN(x)) {
+    throw new Error(`Invalid input for sin⁻¹: ${x}. Input must be a number.`);
+  }
+  if (x < -1 || x > 1) {
+    throw new Error(`Domain error for sin⁻¹: ${x}. Input must be between -1 and 1.`);
+  }
+  
+  let result = Math.asin(x); // Result in radians
+  
+  // Convert to degrees if your calculator is in degree mode
+  // Uncomment the next line if you want degree output
+  // result = result * (180 / Math.PI);
+  
+  return result;
+};
+
+export const taylorAtan = (x) => {
+  if (typeof x !== 'number' || isNaN(x)) {
+    throw new Error(`Invalid input for tan⁻¹: ${x}. Input must be a number.`);
+  }
+  
+  let result = Math.atan(x); // Result in radians
+  
+  // Convert to degrees if your calculator is in degree mode
+  // Uncomment the next line if you want degree output
+  // result = result * (180 / Math.PI);
+  
+  return result;
+};
+
+// HYPERBOLIC SINE function
+export const taylorSinh = (input) => {
+  const x = inputToRadians(input);
+  
+  // For large values, use exponential identity to avoid overflow
+  if (Math.abs(x) > 20) {
+    const ex = Math.exp(Math.abs(x));
+    return Math.sign(x) * ex / 2;
+  }
+  
+  const result = (Math.exp(x) - Math.exp(-x)) / 2;
+  return radiansToOutput(result);
+};
+
+// HYPERBOLIC COSINE function
+export const taylorCosh = (input) => {
+  const x = inputToRadians(input);
+  
+  // For large values, use exponential identity to avoid overflow
+  if (Math.abs(x) > 20) {
+    const ex = Math.exp(Math.abs(x));
+    return ex / 2;
+  }
+  
+  const result = (Math.exp(x) + Math.exp(-x)) / 2;
+  return radiansToOutput(result);
+};
+
+// HYPERBOLIC TANGENT function
+export const taylorTanh = (input) => {
+  const x = inputToRadians(input);
+  
+  // For very large values, tanh approaches ±1
+  if (x > 20) return radiansToOutput(1);
+  if (x < -20) return radiansToOutput(-1);
+  
+  let result;
+  // For values close to zero, use Taylor series
+  if (Math.abs(x) < 0.1) {
+    result = x - (x*x*x)/3 + (2*x*x*x*x*x)/15;
+  } else {
+    // Otherwise use exponential definition
+    const ex = Math.exp(2*x);
+    result = (ex - 1) / (ex + 1);
+  }
+  
+  return radiansToOutput(result);
+};
+
+// INVERSE HYPERBOLIC SINE
+export const taylorAsinh = (input) => {
+  const x = inputToRadians(input);
+  
+  let result;
+  // For large values, use logarithmic identity
+  if (Math.abs(x) > 1e6) {
+    result = Math.sign(x) * (computeLn(Math.abs(x)) + computeLn(2));
+  } else {
+    result = computeLn(x + sqrt(x*x + 1));
+  }
+  
+  return radiansToOutput(result);
+};
+
+// INVERSE HYPERBOLIC COSINE
+export const taylorAcosh = (input) => {
+  const x = inputToRadians(input);
+  
+  if (x < 1) return NaN;
+  if (x === 1) return radiansToOutput(0);
+  
+  const result = computeLn(x + sqrt(x*x - 1));
+  return radiansToOutput(result);
+};
+
+// INVERSE HYPERBOLIC TANGENT
+export const taylorAtanh = (input) => {
+  const x = inputToRadians(input);
+  
+  if (Math.abs(x) >= 1) return NaN;
+  
+  const result = 0.5 * computeLn((1 + x) / (1 - x));
+  return radiansToOutput(result);
+};
 
 
 //x⁻¹ function
@@ -57,21 +341,6 @@ export const div_mul = (x, y, z) => {
 };
 
 
-// Function to calculate square root using Babylonian method
-export const sqrt = (x) => {
-  if (x < 0) return NaN;
-  if (x === 0) return 0;
-  
-  let guess = x / 2;
-  let prevGuess = 0;
-  const precision = 1e-10;
-  
-  while (abs(guess - prevGuess) > precision) {
-    prevGuess = guess;
-    guess = (guess + x / guess) / 2;
-  }
-  return guess;
-};
 
 //cube root 
 export const cbrt = (x) => {
@@ -144,240 +413,21 @@ export const makeNegative=(value)=> {
   return -1 * value;
 }
 
-//ln
-export const computeLn = (x, terms = 20) => {
-    if (x <= 0) return NaN;
-
-    // Transform x to ln(1 + y)
-    let y = (x - 1) / (x + 1);
-    let y2 = y * y;
-    let sum = 0;
-
-    for (let n = 1; n <= terms * 2; n += 2) {
-      sum += (1 / n) * Math.pow(y, n);
-    }
-
-    return 2 * sum;
-  };
-
-  //log
-  export const computeLog10 = (x, terms = 20) => {
-  const ln10 = computeLn(10, terms);
-  const lnX = computeLn(x, terms);
-  return lnX / ln10;
-};
-
-//LOG BASE 2
-export const computeLogBase = (x, base, terms = 20) => {
-  const lnX = computeLn(x, terms);
-  const lnBase = computeLn(base, terms);
-  return lnX / lnBase;
-};
-
-//
-export const computeSummation = (variable, start, end, expression) => {
-  let sum = 0;
-
-  for (let i = Number(start); i <= Number(end); i++) {
-    // Replace variable in expression with current value
-    const evalExpr = expression.replaceAll(variable, `(${i})`);
-
-    // Evaluate using Function constructor (simple but careful!)
-    sum += Function(`return ${evalExpr}`)();
-  }
-
-  return sum;
-};
 
 
-
-// Function to convert degrees to radians
+// Angle conversion functions
 export const toRadians = (degrees) => {
   return degrees * PI / 180;
 };
 
-// Function to convert grads to radians
 export const toRadiansFromGrads = (grads) => {
   return grads * PI / 200;
 };
 
 
-// Function to normalize angle to [-π, π]
-export const normalizeAngle = (radians) => {
-  const twoPi = 2 * PI;
-  return radians - twoPi * floor((radians + PI) / twoPi);
-};
-
-// Floor function
-export const floor = (x) => {
-  return x >= 0 ? ~~x : ~~x - 1;
-};
-
-// Sine function using T  aylor series (for better accuracy with more terms)
-// export const taylorSin = (x) => {
-//   x = normalizeAngle(x);
-//   let sum = 0;
-//   let term = x;
-//   let n = 0;
-  
-//   while (Math.abs(term) > 1e-15 && n < 20) {
-//     sum += term;
-//     n++;
-//     term *= -x * x / ((2 * n) * (2 * n + 1));
-//   }
-//   return sum;
-// };
-
-// Cosine function using Taylor series (with more terms for better accuracy)
-// export const taylorCos = (x) => {
-//   x = normalizeAngle(x);
-//   let sum = 1;
-//   let term = 1;
-//   let n = 0;
-  
-//   while (Math.abs(term) > 1e-15 && n < 20) {
-//     n++;
-//     term *= -x * x / ((2 * n - 1) * (2 * n));
-//     sum += term;
-//   }
-//   return sum;
-// };
-
-// Tangent function using sine and cosine
-// export const taylorTan = (x) => {
-//   // Check for values close to π/2 + nπ where tangent is undefined
-//   const normalized = normalizeAngle(x);
-//   if (Math.abs(Math.abs(normalized) - PI/2) < 1e-10) {
-//     return Infinity * Math.sign(normalized);
-//   }
-  
-//   const sinVal = taylorSin(x);
-//   const cosVal = taylorCos(x);
-  
-//   if (Math.abs(cosVal) < 1e-10) {
-//     return Infinity * Math.sign(sinVal);
-//   }
-//   return sinVal / cosVal;
-// };
-
-// Arc sine function improved implementation
-export const taylorAsin = (x) => {
-  if (x < -1 || x > 1) return NaN;
-  if (Math.abs(x) === 1) return PI/2 * Math.sign(x);
-  
-  // For small values use Taylor series
-  if (Math.abs(x) < 0.5) {
-    let sum = x;
-    let term = x;
-    let n = 0;
-    
-    while (Math.abs(term) > 1e-15 && n < 100) {
-      n++;
-      term *= x * x * (2 * n - 1) * (2 * n - 1) / ((2 * n) * (2 * n + 1));
-      sum += term;
-    }
-    return sum;
-  } else {
-    // For larger values use identity: arcsin(x) = π/2 - arcsin(√(1-x²))
-    return PI/2 - taylorAsin(sqrt(1 - x * x));
-  }
-};
-
-// Arc cosine function using arc sine
-export const taylorAcos = (x) => {
-  if (x < -1 || x > 1) return NaN;
-  return PI/2 - taylorAsin(x);
-};
-
-// Arc tangent improved implementation
-export const taylorAtan = (x) => {
-  // Use identity for large values
-  if (Math.abs(x) > 1) {
-    return Math.sign(x) * PI/2 - taylorAtan(1/x);
-  }
-  
-  // For values close to 1, use identity
-  if (Math.abs(x - 1) < 1e-10) return PI/4;
-  if (Math.abs(x + 1) < 1e-10) return -PI/4;
-  
-  let sum = x;
-  let term = x;
-  let n = 0;
-  
-  while (Math.abs(term) > 1e-15 && n < 100) {
-    n++;
-    term *= -x * x * (2 * n - 1) / (2 * n + 1);
-    sum += term;
-  }
-  return sum;
-};
 
 
-// Hyperbolic sine function
-export const taylorSinh = (x) => {
-  // For large values, use exponential identity to avoid overflow
-  if (Math.abs(x) > 20) {
-    const ex = Math.exp(Math.abs(x));
-    return Math.sign(x) * ex / 2; // Approximation for large values
-  }
-  
-  return (Math.exp(x) - Math.exp(-x)) / 2;
-};
 
-// Hyperbolic cosine function
-export const taylorCosh = (x) => {
-  // For large values, use exponential identity to avoid overflow
-  if (Math.abs(x) > 20) {
-    const ex = Math.exp(Math.abs(x));
-    return ex / 2; // Approximation for large values
-  }
-  
-  return (Math.exp(x) + Math.exp(-x)) / 2;
-};
-
-// Hyperbolic tangent function
-export const taylorTanh = (x) => {
-  // For very large values, tanh approaches ±1
-  if (x > 20) return 1;
-  if (x < -20) return -1;
-  
-  // For values close to zero, use Taylor series
-  if (Math.abs(x) < 0.1) {
-    return x - (x*x*x)/3 + (2*x*x*x*x*x)/15;
-  }
-  
-  // Otherwise use exponential definition
-  const ex = Math.exp(2*x);
-  return (ex - 1) / (ex + 1);
-};
-
-// Inverse hyperbolic sine
-export const taylorAsinh = (x) => {
-  // For large values, use logarithmic identity
-  if (Math.abs(x) > 1e6) {
-    return Math.sign(x) * (computeLn(Math.abs(x)) + computeLn(2));
-  }
-  
-  return computeLn(x + sqrt(x*x + 1));
-};
-
-// Inverse hyperbolic cosine
-export const taylorAcosh = (x) => {
-  if (x < 1) return NaN;
-  if (x === 1) return 0;
-  
-  return computeLn(x + sqrt(x*x - 1));
-};
-
-// Inverse hyperbolic tangent
-export const taylorAtanh = (x) => {
-  if (Math.abs(x) >= 1) return NaN;
-  
-  return 0.5 * computeLn((1 + x) / (1 - x));
-};
-
-export const taylorCos = (x) => Math.cos(x);
-export const taylorTan = (x) => Math.tan(x);
 
 export function dmsToDecimal(dmsString) {
   const parts = dmsString
@@ -413,7 +463,8 @@ export function dmsToDecimal(dmsString) {
 }
 
 // Numerical differentiation using central difference method
-export const taylorSin = (x) => Math.sin(x);
+// SINE function using Taylor series - HIGH PRECISION
+
 
 //arg
 export function computeArg(z) {

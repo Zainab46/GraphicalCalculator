@@ -4,9 +4,8 @@ import { factorial , PI,E,abs,sqrt, div_mul, divide, cbrt, square, cube, x_yrt,
   makeNegative, computeLog10, computeLn,computeLogBase, 
   computeSummation,taylorSin,taylorTan,taylorCos,taylorAsin,taylorAcos,taylorAtan,
 taylorSinh,taylorCosh,taylorTanh,taylorAsinh,taylorAcosh,taylorAtanh,initDB,insertRecord,computeIntegration,computeDerivative,
-Rand,advancedIntegration,symbolicDerivative,tenPower,RanSharp,RanInt} from "./Screens/AllLogics";
-import { computeArg,computecongj,compute_abi,computePolar } from "./Screens/ComplexModeLogics";
-
+Rand,advancedIntegration,symbolicDerivative,tenPower,RanSharp,RanInt,config} from "./Screens/AllLogics";
+import { computeArg,computecongj,compute_abi,computePolar,parseComplex,computeRectangular } from "./Screens/ComplexModeLogics";
 
 
 
@@ -29,8 +28,10 @@ function Main({navigation,ActualMode,setActualMode,route}){
   const[BaseStartPosition,setBaseStartPosition]=useState(null);
   const[ExponentStartPosition,setExponentStartPosition]=useState(null);
   const [lastresult,setLastResult]=useState(null);
-  let hypitems= route?.params?.hypvalues??null;
-  let eqvalues=route?.params?.equation??null;
+  //let hypitems= route?.params?.hypvalues??null;
+  const [hypitems, sethypitems] = useState(route?.params?.hypvalues??null);
+  //let eqvalues=route?.params?.equation??null;
+  const [eqvalues, seteqvalues] = useState(route?.params?.equation??null);
   const [shiftSeven, setShiftSeven] = useState(route?.params?.shiftsvn ?? null);
   const [shiftSeven2, setShiftSeven2] = useState(route?.params?.shiftsn ?? null);
   const [shifttwo, setshifttwo] = useState(route?.params?.complxvalues??null);
@@ -57,12 +58,15 @@ function Main({navigation,ActualMode,setActualMode,route}){
 const DRGHandling=()=>{
   if(DRG==='DEG'){
     setDRG('RAD')
+    config.mode="RAD" 
   }
   else if(DRG==='RAD'){
     setDRG('GRAD')
+    config.mode="GRAD"
   }
   else{
     setDRG('DEG')
+    config.mode="DEG"
   }
 }
 
@@ -109,7 +113,7 @@ else if(shift===false){
     ShiftAlphaHandling();
     ShowHyp();
 
-  }, [shift, alpha,hypitems,eqvalues]);
+  }, [shift, alpha,eqvalues]);
 
 
   // handle text on button clicks
@@ -597,7 +601,7 @@ if(hypitems!==null&&shift==false){
   setExpressionInput(newExpression);
    setFirstPlaceholderPosition(currentPos + 6);
   setCursorPosition(currentPos + 8);  
-  hypitems=null;
+  sethypitems(null)
 }
 else if(eqvalues!=null){
    const currentPos = cursorPosition !== null ? cursorPosition : expressionInput.length;
@@ -606,7 +610,7 @@ else if(eqvalues!=null){
                            setExpressionInput(newExpression);
   setFirstPlaceholderPosition(currentPos + 6);
   setCursorPosition(currentPos + 8);  
-  eqvalues=null;
+  seteqvalues(null)
 }
   else if (shiftSeven !== null && shiftSeven2 !== null) {
   console.log('before= ' + shiftSeven);
@@ -622,7 +626,7 @@ else if(eqvalues!=null){
 }
 else if (shifttwo != null) {
   const currentPos = cursorPosition !== null ? cursorPosition : expressionInput.length;
-  const newExpression = expressionInput.substring(0, currentPos) + shifttwo + expressionInput.substring(currentPos);
+  const newExpression = expressionInput.substring(0, currentPos) +lastresult+shifttwo + expressionInput.substring(currentPos);
   setExpressionInput(newExpression);
   setshifttwo(null);
 }
@@ -741,6 +745,12 @@ if(lastresult){
 }
 
 
+// Helper functions that need to be defined
+const power = (base, exponent) => Math.pow(base, exponent);
+const multiply = (a, b) => a * b;
+
+
+
 const evaluateExpression = (expr) => {
   console.log(`Original expression: ${expr}`);
   
@@ -761,7 +771,7 @@ const evaluateExpression = (expr) => {
     return x0 ? `computeDerivative("${fx}", ${x0})` : `computeDerivative("${fx}")`;
   });
 
-  //console.log(`After integration/differentiation replacement: ${expr}`);
+  console.log(`After integration/differentiation replacement: ${expr}`);
 
   // Replace operators for JavaScript evaluation (only if not already handled)
   if (!expr.includes('computeIntegration') && !expr.includes('computeDerivative')) {
@@ -788,16 +798,16 @@ const evaluateExpression = (expr) => {
     expr = expr.replace(/(\w+|\([^()]*\))³/g, 'cube($1)');
     expr = expr.replace(/(\w+|\([^()]*\))\s*\^\s*(\w+|\([^()]*\))/g, 'power($1, $2)');
     expr = expr.replace(/(\w+|\([^()]*\))\s*√\s*(\w+|\([^()]*\))/g, 'x_yrt($2, $1)');
-    expr = expr.replace(/-\s*(\w+|\([^()]*\))/g, 'makeNegative($1)');
+    //expr = expr.replace(/-\s*(\w+|\([^()]*\))/g, 'makeNegative($1)');
     expr = expr.replace(/log\(([^)]+)\)/g, 'computeLog10($1)');
     expr = expr.replace(/Ln\(([^)]+)\)/g, 'computeLn($1)');
     expr = expr.replace(/log(\d+)\(([^)]+)\)/g, 'computeLogBase($2, $1)');
     expr = expr.replace(/∑\(([^,]+),([^,]+),([^,]+),([^)]+)\)/g, 'computeSummation($1, $2, $3, $4)');
-   expr = expr.replace(/arg\(([^)]+)\)/gi, 'computeArg($1)');
-   expr = expr.replace(/conjg\(([^)]+)\)/gi, 'computecongj($1)');
-   expr = expr.replace(/([a-zA-Z0-9_]+)\s*▶\s*a\+bi/gi, 'compute_abi($1)');
-  expr = expr.replace(/([a-zA-Z0-9_]+)\s*▶\s*r∠θ/gi, 'computePolar($1)');
-
+    expr = expr.replace(/arg\(([^)]+)\)/g, 'computeArg("$1")');
+    expr = expr.replace(/conjg\(([^)]+)\)/gi, 'computecongj($1)');
+    expr = expr.replace(/([0-9.]+)\s*▶\s*a\+bi/g, 'compute_abi($1)');
+    expr = expr.replace(/([0-9.]+)\s*▶\s*r∠θ/g, 'computeRectangular($1, 0)');
+    
 
     // Convert angles based on DRG mode for trigonometric functions
     if (typeof DRG !== 'undefined' && DRG !== 'RAD') {
@@ -822,13 +832,6 @@ const evaluateExpression = (expr) => {
     expr = expr.replace(/sinh⁻¹\(/g, 'taylorAsinh(');
     expr = expr.replace(/cosh⁻¹\(/g, 'taylorAcosh(');
     expr = expr.replace(/tanh⁻¹\(/g, 'taylorAtanh(');
-     expr = expr.replace(/π/g, 'PI');
-    expr = expr.replace(/e/g, 'E')
-    expr = expr.replace(/10\^(\d+(\.\d+)?|\([^()]*\))/g, 'tenPower($1)');
-    expr = expr.replace(/Rand\(\)/g, () => RanSharp());
-  expr = expr.replace(/RanInt\((\d+),\s*(\d+)\)/g, (_, a, b) => RanInt(Number(a), Number(b)))
-
-
   }
 
   console.log(`Final expression before evaluation: ${expr}`);
@@ -838,8 +841,7 @@ const evaluateExpression = (expr) => {
       'PI', 'E', 'factorial', 'abs', 'sqrt', 'divide', 'div_mul', 'cbrt', 'square', 'cube', 'x_yrt', 'makeNegative',
       'computeLog10', 'computeLn', 'computeLogBase', 'computeIntegration', 'computeDerivative', 'computeSummation',
       'taylorSin', 'taylorCos', 'taylorTan', 'taylorAsin', 'taylorAcos', 'taylorAtan', 'taylorSinh', 'taylorCosh', 'taylorTanh',
-      'taylorAsinh', 'taylorAcosh', 'taylorAtanh', 'computeArg', 'computecongj', 'compute_abi', 'computePolar','tenPower',
-      'RanInt','RanSharp',
+      'taylorAsinh', 'taylorAcosh', 'taylorAtanh', 'computeArg', 'computecongj', 'compute_abi', 'computeRectangular',
       `return ${expr};`
     );
 
@@ -847,17 +849,18 @@ const evaluateExpression = (expr) => {
       PI, E, factorial, abs, sqrt, divide, div_mul, cbrt, square, cube, x_yrt, makeNegative,
       computeLog10, computeLn, computeLogBase, computeIntegration, computeDerivative, computeSummation,
       taylorSin, taylorCos, taylorTan, taylorAsin, taylorAcos, taylorAtan, taylorSinh, taylorCosh, taylorTanh,
-      taylorAsinh, taylorAcosh, taylorAtanh, computeArg, computecongj, compute_abi, computePolar,tenPower,RanInt,RanSharp
+      taylorAsinh, taylorAcosh, taylorAtanh, computeArg, computecongj, compute_abi, computeRectangular
     );
 
     console.log(`Evaluation result: ${result}`);
-    return (typeof result === 'number' && !isNaN(result)) ? result : "Error";
+    return result;
 
   } catch (error) {
     console.error("Evaluation error:", error);
     return "Error: " + error.message;
   }
 };
+
 const handleExp = () => {
   const currentPos = cursorPosition !== null ? cursorPosition : expressionInput.length;
 
@@ -969,15 +972,14 @@ const handleRand = () => {
     else if (expressionInput) {
   const result = evaluateExpression(expressionInput);
 
-  // ❌ Prevent saving invalid results
-  if (typeof result !== 'number' || isNaN(result)) {
-    setResult("Error");
-    return;
-  }
+
 
   setResult(result.toString());
-  insertRecord(expressionInput, result);
+  console.log('ya hai last result '+result.toString())
   setLastResult(result.toString());
+  console.log(lastresult)
+  insertRecord(expressionInput, result);
+  
 }
 
     

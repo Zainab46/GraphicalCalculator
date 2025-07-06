@@ -57,10 +57,31 @@ function cos(x) {
   return result;
 }
 
-// 1. Arg(z)
+export function parseComplex(str) {
+  str = String(str).replace(/\s+/g, '');
+  // Pure imaginary numbers (e.g., "i", "-i", "2i", "-2.5i")
+  if (/^[+-]?\d*\.?\d*i$/.test(str)) {
+    const b = parseFloat(str.replace('i', '')) || (str === '-i' ? -1 : str === 'i' ? 1 : 0);
+    return [0, b];
+  }
+  // Real numbers (e.g., "25", "-3.14")
+  if (/^[+-]?\d*\.?\d*$/.test(str)) {
+    const a = parseFloat(str) || 0;
+    return [a, 0];
+  }
+  // Full complex numbers (e.g., "3+4i", "-2.5-1.1i", "2+3i")
+  const match = str.match(/^([+-]?\d*\.?\d*)([+-]\d*\.?\d*)i$/);
+  if (!match) throw new Error("Invalid complex format");
+  return [parseFloat(match[1]) || 0, parseFloat(match[2]) || 0];
+}
+
 export function computeArg(z) {
-  const [a, b] = parseComplex(z);
-  return atan2(b, a); // result in radians
+  try {
+    const [a, b] = parseComplex(z);
+    return Math.atan2(b, a);
+  } catch (error) {
+    throw new Error("Invalid complex number format for arg()");
+  }
 }
 
 // 2. Conjugate
@@ -69,19 +90,48 @@ export function computecongj(z) {
   return `${a}${b < 0 ? '+' : '-'}${Math.abs(b)}i`;
 }
 
-// 3. Polar to Rectangular ▶a+bi
-export function compute_abi(varName) {
-  const polar = getPolarByName(varName); // { r, theta (degrees) }
-  const thetaRad = polar.theta * Math.PI / 180;
-  const real = polar.r * cos(thetaRad);
-  const imag = polar.r * sin(thetaRad);
+
+
+// Existing compute_abi function
+export function compute_abi(inputNumber) {
+  const str = inputNumber.toString();
+
+  let a, b;
+
+  if (str.includes('i')) {
+    // It is a complex number represented as a string-number, e.g. "3+4i" becomes NaN normally, but passed as 34i
+    const parsed = parseComplex(str);
+    a = parsed[0];
+    b = parsed[1];
+  } else {
+    // It's just a real number like 25 → 25 + 0i
+    a = parseFloat(str);
+    b = 0;
+  }
+
+  const r = Math.sqrt(a * a + b * b);
+  const theta = Math.atan2(b, a) * 180 / Math.PI;
+  const thetaRad = theta * Math.PI / 180;
+  const real = r * Math.cos(thetaRad);
+  const imag = r * Math.sin(thetaRad);
+
   return `${real.toFixed(4)}${imag < 0 ? '-' : '+'}${Math.abs(imag).toFixed(4)}i`;
 }
 
 // 4. Rectangular to Polar ▶r∠θ
-export function computePolar(varName) {
-  const [a, b] = parseComplex(getComplexByName(varName));
-  const r = Math.sqrt(a * a + b * b);
-  const theta = atan2(b, a) * 180 / Math.PI;
-  return { r: r.toFixed(4), theta: theta.toFixed(4) }; // in degrees
+export function computePolar(inputNumber) {
+  const inputStr = inputNumber.toString();           // Convert number to string
+  const [a, b] = parseComplex(inputStr);             // Parse complex components
+  const r = Math.sqrt(a * a + b * b);                // Magnitude
+  const theta = Math.atan2(b, a) * 180 / Math.PI;    // Angle in degrees
+
+  return { r: r.toFixed(4), theta: theta.toFixed(4) };
+}
+
+export function computeRectangular(r, thetaDegrees = 0) {
+  const thetaRad = thetaDegrees * Math.PI / 180;
+  const a = r * Math.cos(thetaRad);
+  const b = r * Math.sin(thetaRad);
+
+  return `${a.toFixed(4)}${b < 0 ? '-' : '+'}${Math.abs(b).toFixed(4)}i`;
 }
