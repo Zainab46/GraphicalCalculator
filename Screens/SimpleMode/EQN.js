@@ -49,15 +49,17 @@ const solveQuadratic = (a, b, c) => {
   return [(-b + sqrtD) / (2 * a), (-b - sqrtD) / (2 * a)];
 };
 
-function EquationMenu({navigation,route}) {
+function EquationMenu({navigation, route}) {
   const [selectedEquation, setSelectedEquation] = useState(null);
   const [inputs, setInputs] = useState({});
   const [result, setResult] = useState(null);
+  const [equationDisplay, setEquationDisplay] = useState('');
 
   const handleEquationSelect = (value) => {
     setSelectedEquation(value);
     setInputs({}); // Reset inputs
     setResult(null); // Reset result
+    setEquationDisplay(''); // Reset equation display
   };
 
   const getInputFields = () => {
@@ -67,48 +69,83 @@ function EquationMenu({navigation,route}) {
       // Two equations: a1x + b1y = c1, a2x + b2y = c2
       return ['a1', 'b1', 'c1', 'a2', 'b2', 'c2'];
     } else if (selectedEquation === 'quadratic') {
-      // Three equations: a1x² + b1x + c1 = 0, etc.
-      return ['a1', 'b1', 'c1', 'a2', 'b2', 'c2', 'a3', 'b3', 'c3'];
+      // Quadratic equation: ax² + bx + c = 0
+      return ['a', 'b', 'c'];
     } else if (selectedEquation === 'cubic') {
-      return ['a1', 'b1', 'c1'];
+      return ['a', 'b', 'c', 'd'];
     } else if (selectedEquation === 'quartic') {
-      return ['a1', 'b1', 'c1', 'd1'];
+      return ['a', 'b', 'c', 'd', 'e'];
     }
     return [];
   };
 
-const navigateToMain = () => {
-  const inputValues = Object.values(inputs).map(val => parseFloat(val) || 0);
-  let solution = null;
-  let finalResult = '';
-
-  if (selectedEquation === 'linear') {
-    const coefficients = [
-      [inputValues[0], inputValues[1]], // a1, b1
-      [inputValues[3], inputValues[4]], // a2, b2
-    ];
-    const constants = [inputValues[2], inputValues[5]]; // c1, c2
-    solution = solveLinearSystem(coefficients, constants);
-    if (solution) {
-      finalResult = `x = ${solution[0].toFixed(2)}, y = ${solution[1].toFixed(2)}`;
-    } else {
-      finalResult = 'No solution or invalid input';
+  const formatEquation = (inputValues) => {
+    if (selectedEquation === 'linear') {
+      const [a1, b1, c1, a2, b2, c2] = inputValues;
+      const eq1 = `${a1}x + ${b1}y = ${c1}`;
+      const eq2 = `${a2}x + ${b2}y = ${c2}`;
+      return `${eq1}\n${eq2}`;
+    } else if (selectedEquation === 'quadratic') {
+      const [a, b, c] = inputValues;
+      return `${a}x² + ${b}x + ${c} = 0`;
+    } else if (selectedEquation === 'cubic') {
+      const [a, b, c, d] = inputValues;
+      return `${a}x³ + ${b}x² + ${c}x + ${d} = 0`;
+    } else if (selectedEquation === 'quartic') {
+      const [a, b, c, d, e] = inputValues;
+      return `${a}x⁴ + ${b}x³ + ${c}x² + ${d}x + ${e} = 0`;
     }
-  } else if (selectedEquation === 'quadratic') {
-    const [a, b, c] = inputValues.slice(0, 3);
-    solution = solveQuadratic(a, b, c);
-    if (solution) {
-      finalResult = `Roots: x1 = ${solution[0].toFixed(2)}, x2 = ${solution[1].toFixed(2)}`;
+    return '';
+  };
+
+  const solveEquation = () => {
+    const inputValues = Object.values(inputs).map(val => parseFloat(val) || 0);
+    let solution = null;
+    let finalResult = '';
+
+    // Format and display the equation
+    const equationText = formatEquation(inputValues);
+    setEquationDisplay(equationText);
+
+    if (selectedEquation === 'linear') {
+      const coefficients = [
+        [inputValues[0], inputValues[1]], // a1, b1
+        [inputValues[3], inputValues[4]], // a2, b2
+      ];
+      const constants = [inputValues[2], inputValues[5]]; // c1, c2
+      solution = solveLinearSystem(coefficients, constants);
+      if (solution) {
+        finalResult = `x = ${solution[0].toFixed(4)}, y = ${solution[1].toFixed(4)}`;
+      } else {
+        finalResult = 'No solution or invalid input';
+      }
+    } else if (selectedEquation === 'quadratic') {
+      const [a, b, c] = inputValues.slice(0, 3);
+      solution = solveQuadratic(a, b, c);
+      if (solution) {
+        finalResult = `x₁ = ${solution[0].toFixed(4)}, x₂ = ${solution[1].toFixed(4)}`;
+      } else {
+        finalResult = 'No real roots or invalid input';
+      }
     } else {
-      finalResult = 'No real roots or invalid input';
+      finalResult = 'Solver not implemented for this equation type';
     }
-  } else {
-    finalResult = 'Solver not implemented for this equation type';
-  }
 
-  navigation.navigate('Main', { equation: finalResult });
-};
+    setResult(finalResult);
+     
+      navigation.navigate('Main', { 
+        equation: equationDisplay,
+        result: result 
+      });
+  };
 
+
+  const resetEquation = () => {
+    setSelectedEquation(null);
+    setInputs({});
+    setResult(null);
+    setEquationDisplay('');
+  };
 
   const renderInputs = () => {
     if (!selectedEquation) return null;
@@ -116,22 +153,37 @@ const navigateToMain = () => {
     const inputFields = getInputFields();
 
     return (
-      <View style={styles.inputContainer}>
-        <Text style={styles.headingText}>{selectedEquation.toUpperCase()} Equation Inputs</Text>
-        {inputFields.map((field) => (
-          <TextInput
-            key={field}
-            style={styles.input}
-            placeholder={`Enter ${field}`}
-            placeholderTextColor="#999"
-            value={inputs[field] || ''}
-            onChangeText={(text) => setInputs({ ...inputs, [field]: text })}
-            keyboardType="numeric"
-          />
-        ))}
-        <Button title="Solve" onPress={()=>navigateToMain()} />
-       
-      </View>
+      <ScrollView style={styles.inputContainer}>
+        <Text style={styles.headingText}>{selectedEquation.toUpperCase()} Equation Solver</Text>
+        
+        {/* Input Fields */}
+        <View style={styles.inputSection}>
+          <Text style={styles.sectionTitle}>Enter Coefficients:</Text>
+          {inputFields.map((field) => (
+            <TextInput
+              key={field}
+              style={styles.input}
+              placeholder={`Enter ${field}`}
+              placeholderTextColor="#999"
+              value={inputs[field] || ''}
+              onChangeText={(text) => setInputs({ ...inputs, [field]: text })}
+              keyboardType="numeric"
+            />
+          ))}
+        </View>
+
+        {/* Buttons */}
+        <View style={styles.buttonRow}>
+          <TouchableOpacity style={styles.solveButton} onPress={solveEquation}>
+            <Text style={styles.buttonText}>Solve</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.resetButton} onPress={resetEquation}>
+            <Text style={styles.buttonText}>Back</Text>
+          </TouchableOpacity>
+        </View>
+
+        
+      </ScrollView>
     );
   };
 
@@ -142,7 +194,7 @@ const navigateToMain = () => {
           data={modes.eq}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <View style={{ width: '100%', borderRadius: 5, borderWidth: 1, backgroundColor: '#434547', borderColor: '#83888d' }}>
+            <View style={styles.listItem}>
               <TouchableOpacity onPress={() => handleEquationSelect(item.value)} style={styles.item}>
                 <Text style={styles.itemText}>{item.id}: {item.name}</Text>
               </TouchableOpacity>
@@ -161,11 +213,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#222',
     paddingTop: 20,
   },
+  listItem: {
+    width: '100%',
+    borderRadius: 5,
+    borderWidth: 1,
+    backgroundColor: '#434547',
+    borderColor: '#83888d',
+    marginBottom: 10,
+    marginHorizontal: 10,
+  },
   item: {
     paddingVertical: 20,
     paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#444',
   },
   itemText: {
     fontSize: 18,
@@ -173,28 +232,95 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   inputContainer: {
+    flex: 1,
     padding: 20,
   },
   headingText: {
-    fontSize: 20,
+    fontSize: 24,
+    color: '#fff',
+    fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  inputSection: {
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 18,
     color: '#fff',
     fontWeight: 'bold',
     marginBottom: 10,
-    textAlign: 'center',
   },
   input: {
     borderWidth: 1,
     borderColor: '#777',
-    padding: 10,
+    padding: 12,
     marginBottom: 10,
-    borderRadius: 6,
+    borderRadius: 8,
     backgroundColor: '#333',
     color: 'white',
+    fontSize: 16,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  solveButton: {
+    backgroundColor: '#28a745',
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 8,
+    flex: 0.45,
+  },
+  resetButton: {
+    backgroundColor: '#dc3545',
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 8,
+    flex: 0.45,
+  },
+  mainButton: {
+    backgroundColor: '#007bff',
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 8,
+    marginTop: 20,
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  displaySection: {
+    marginBottom: 20,
+  },
+  equationBox: {
+    backgroundColor: '#333',
+    padding: 15,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#555',
+  },
+  equationText: {
+    color: '#fff',
+    fontSize: 18,
+    fontFamily: 'monospace',
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  resultBox: {
+    backgroundColor: '#1a472a',
+    padding: 15,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#28a745',
   },
   resultText: {
+    color: '#28a745',
     fontSize: 18,
-    color: '#0f0',
-    marginTop: 20,
+    fontWeight: 'bold',
     textAlign: 'center',
   },
 });

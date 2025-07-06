@@ -32,6 +32,7 @@ function Main({navigation,ActualMode,setActualMode,route}){
   const [hypitems, sethypitems] = useState(route?.params?.hypvalues??null);
   //let eqvalues=route?.params?.equation??null;
   const [eqvalues, seteqvalues] = useState(route?.params?.equation??null);
+  const [eqvaluesresult, seteqvaluesresult] = useState(route?.params?.result??null);
   const [shiftSeven, setShiftSeven] = useState(route?.params?.shiftsvn ?? null);
   const [shiftSeven2, setShiftSeven2] = useState(route?.params?.shiftsn ?? null);
   const [shifttwo, setshifttwo] = useState(route?.params?.complxvalues??null);
@@ -908,6 +909,16 @@ const handleRand = () => {
       navigation.navigate('History')
     }
   
+    else if (eqvaluesresult) {
+      setResult(eqvaluesresult);
+      insertRecord(eqvalues,eqvaluesresult)
+      console.log(eqvaluesresult);
+
+      // Clear
+      seteqvalues(null);
+      seteqvaluesresult(null);
+    }
+
     
     else if (baseresults) {
       setResult(baseresults);
