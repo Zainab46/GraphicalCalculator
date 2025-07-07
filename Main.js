@@ -584,12 +584,11 @@ const handleDecimalClick = () => {
   const lastPart = parts[parts.length - 1];
 
   if (!lastPart.includes('.')) {
-    setExpressionInput(
-      expressionInput.substring(0, currentPos) +
-      '.' +
-      expressionInput.substring(currentPos)
-    );
-    setCursorPosition(currentPos + 1);
+     const newExpression = expressionInput.substring(0, currentPos) + '.' + 
+                         expressionInput.substring(currentPos);
+  setExpressionInput(newExpression);
+    setFirstPlaceholderPosition(currentPos + 2);
+  setCursorPosition(currentPos + 2);  
   }
 };
 
