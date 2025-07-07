@@ -8,7 +8,10 @@ let db;
 const PI = 3.141592653589793;
 const E = 2.718281828459045;
 export const config = {
-  mode: "DEG"
+  mode: "DEG",
+  ANS: "",
+  expression:"",
+  count:'0',
 };
 
 // Helper function to convert input to radians based on current mode
@@ -1004,3 +1007,260 @@ function toggleDMSDisplay(currentValue, originalDecimal) {
 
   return { output: currentValue, updatedOriginal: originalDecimal };
 }
+
+
+// Physical Constants Data
+const physicalConstants = {
+  "mp": 1.67262189821e-27,     // Proton mass (kg)
+  "mn": 1.67492747121e-27,     // Neutron mass (kg)
+  "me": 9.10938356e-31,        // Electron mass (kg)
+  "mμ": 1.88353159448e-28,     // Muon mass (kg)
+  "a₀": 5.2917721067e-11,      // Bohr radius (m)
+  "h": 6.62607015e-34,         // Planck constant (Js)
+  "μN": 5.05078369931e-27,     // Nuclear magneton (JT⁻¹)
+  "μB": 9.27400999457e-24,     // Bohr magneton (JT⁻¹)
+  "ħ": 1.05457180013e-34,      // Planck constant, rationalized (Js)
+  "α": 0.007297352566417,      // Fine-structure constant
+  "re": 2.817940322719e-15,    // Classical electron radius (m)
+  "λc": 2.426310236711e-12,    // Compton wavelength (m)
+  "λcp": 1.3214098539661e-15,  // Proton Compton wavelength (m)
+  "λcn": 1.3195909048188e-15,  // Neutron Compton wavelength (m)
+  "R∞": 10973731.56850865,     // Rydberg constant (m⁻¹)
+  "u": 1.6605390402e-27,       // Atomic mass constant (kg)
+  "μp": 1.410606787397e-26,    // Proton magnetic moment (JT⁻¹)
+  "μe": -9.28476462057e-24,    // Electron magnetic moment (JT⁻¹)
+  "μn": -9.662365023e-27,      // Neutron magnetic moment (JT⁻¹)
+  "μμ": -4.490448261e-26,      // Muon magnetic moment (JT⁻¹)
+  "F": 96485.332895,           // Faraday constant (Cmol⁻¹)
+  "e": 1.602176634e-19,        // Elementary charge (C)
+  "NA": 6.02214076e23,         // Avogadro constant (mol⁻¹)
+  "k": 1.380649e-23,           // Boltzmann constant (JK⁻¹)
+  "Vm": 0.02271094713,         // Molar volume of ideal (m³mol⁻¹)
+  "R": 8.3144598484848,        // Molar gas constant (Jmol⁻¹K⁻¹)
+  "C₀": 299792458.0,           // Speed of light in vacuum (ms⁻¹)
+  "C₁": 3.74177179046e-16,     // First radiation constant (Wm²)
+  "C₂": 0.014387773683,        // Second radiation constant (mK)
+  "σ": 5.67036713e-8,          // Stefan-Boltzmann constant (Wm⁻²K⁻⁴)
+  "ε₀": 8.854187817e-12,       // Electric constant (Fm⁻¹)
+  "μ₀": 1.25663706e-6,         // Magnetic constant (NA⁻²)
+  "Φ₀": 2.06783383113e-15,     // Magnetic flux quantum (Wb)
+  "g": 9.80665,                // Standard acceleration of gravity (ms⁻²)
+  "G₀": 7.748091731018e-5,     // Conductance quantum (S)
+  "Z₀": 376.730313461,         // Characteristic impedance of vacuum (Ω)
+  "t": 273.15,                 // Celsius temperature (K)
+  "G": 6.6740831e-11,          // Newtonian constant of gravitation (m³kg⁻¹s⁻²)
+  "atm": 101325.0              // Standard atmosphere (Pa)
+};
+
+/**
+ * Calculates mathematical expressions involving physical constants
+ * @param {string} expression - Mathematical expression (e.g., "mp+mp", "me*2", "h/e")
+ * @returns {Object} - Result object with value, error status, and formatted result
+ */
+const calculateExpression = (expression) => {
+  try {
+    // Remove spaces and validate input
+    const cleanExpression = expression.replace(/\s+/g, '');
+    
+    if (!cleanExpression) {
+      return {
+        success: false,
+        error: 'Expression cannot be empty',
+        value: null,
+        formatted: null
+      };
+    }
+
+    // Replace 'x' or 'X' with '*' for multiplication
+    let processedExpression = cleanExpression.replace(/[xX]/g, '*');
+    
+    // Replace physical constants with their values
+    let evaluableExpression = processedExpression;
+    
+    // Sort constants by length (longest first) to avoid partial replacements
+    const sortedConstants = Object.keys(physicalConstants).sort((a, b) => b.length - a.length);
+    
+    for (const constant of sortedConstants) {
+      // Use word boundaries to ensure exact matches
+      const regex = new RegExp(`\\b${constant.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'g');
+      evaluableExpression = evaluableExpression.replace(regex, physicalConstants[constant]);
+    }
+    
+    // Validate that the expression only contains valid characters
+    const validCharacters = /^[0-9+\-*/.() e\-]+$/;
+    if (!validCharacters.test(evaluableExpression)) {
+      return {
+        success: false,
+        error: 'Invalid characters in expression',
+        value: null,
+        formatted: null
+      };
+    }
+    
+    // Evaluate the expression safely
+    const result = Function('"use strict"; return (' + evaluableExpression + ')')();
+    
+    // Check if result is a valid number
+    if (isNaN(result) || !isFinite(result)) {
+      return {
+        success: false,
+        error: 'Invalid calculation result',
+        value: null,
+        formatted: null
+      };
+    }
+    
+    // Format the result
+    const formatted = formatScientificNotation(result);
+    
+    return {
+      success: true,
+      error: null,
+      value: result,
+      formatted: formatted,
+      originalExpression: expression,
+      processedExpression: evaluableExpression
+    };
+    
+  } catch (error) {
+    return {
+      success: false,
+      error: 'Error evaluating expression: ' + error.message,
+      value: null,
+      formatted: null
+    };
+  }
+};
+
+/**
+ * Formats numbers in scientific notation for better readability
+ * @param {number} number - The number to format
+ * @returns {string} - Formatted string
+ */
+const formatScientificNotation = (number) => {
+  if (number === 0) return '0';
+  
+  const absNumber = Math.abs(number);
+  
+  // For very small or very large numbers, use scientific notation
+  if (absNumber < 1e-4 || absNumber >= 1e6) {
+    return number.toExponential(6);
+  }
+  
+  // For normal range numbers, use fixed decimal places
+  return number.toPrecision(8);
+};
+
+/**
+ * Gets information about a physical constant
+ * @param {string} symbol - The constant symbol (e.g., "mp", "me")
+ * @returns {Object} - Information about the constant
+ */
+const getConstantInfo = (symbol) => {
+  const constantsInfo = {
+    "mp": { name: "Proton mass", unit: "kg" },
+    "mn": { name: "Neutron mass", unit: "kg" },
+    "me": { name: "Electron mass", unit: "kg" },
+    "mμ": { name: "Muon mass", unit: "kg" },
+    "a₀": { name: "Bohr radius", unit: "m" },
+    "h": { name: "Planck constant", unit: "Js" },
+    "μN": { name: "Nuclear magneton", unit: "JT⁻¹" },
+    "μB": { name: "Bohr magneton", unit: "JT⁻¹" },
+    "ħ": { name: "Planck constant, rationalized", unit: "Js" },
+    "α": { name: "Fine-structure constant", unit: "dimensionless" },
+    "re": { name: "Classical electron radius", unit: "m" },
+    "λc": { name: "Compton wavelength", unit: "m" },
+    "λcp": { name: "Proton Compton wavelength", unit: "m" },
+    "λcn": { name: "Neutron Compton wavelength", unit: "m" },
+    "R∞": { name: "Rydberg constant", unit: "m⁻¹" },
+    "u": { name: "Atomic mass constant", unit: "kg" },
+    "μp": { name: "Proton magnetic moment", unit: "JT⁻¹" },
+    "μe": { name: "Electron magnetic moment", unit: "JT⁻¹" },
+    "μn": { name: "Neutron magnetic moment", unit: "JT⁻¹" },
+    "μμ": { name: "Muon magnetic moment", unit: "JT⁻¹" },
+    "F": { name: "Faraday constant", unit: "Cmol⁻¹" },
+    "e": { name: "Elementary charge", unit: "C" },
+    "NA": { name: "Avogadro constant", unit: "mol⁻¹" },
+    "k": { name: "Boltzmann constant", unit: "JK⁻¹" },
+    "Vm": { name: "Molar volume of ideal", unit: "m³mol⁻¹" },
+    "R": { name: "Molar gas constant", unit: "Jmol⁻¹K⁻¹" },
+    "C₀": { name: "Speed of light in vacuum", unit: "ms⁻¹" },
+    "C₁": { name: "First radiation constant", unit: "Wm²" },
+    "C₂": { name: "Second radiation constant", unit: "mK" },
+    "σ": { name: "Stefan-Boltzmann constant", unit: "Wm⁻²K⁻⁴" },
+    "ε₀": { name: "Electric constant", unit: "Fm⁻¹" },
+    "μ₀": { name: "Magnetic constant", unit: "NA⁻²" },
+    "Φ₀": { name: "Magnetic flux quantum", unit: "Wb" },
+    "g": { name: "Standard acceleration of gravity", unit: "ms⁻²" },
+    "G₀": { name: "Conductance quantum", unit: "S" },
+    "Z₀": { name: "Characteristic impedance of vacuum", unit: "Ω" },
+    "t": { name: "Celsius temperature", unit: "K" },
+    "G": { name: "Newtonian constant of gravitation", unit: "m³kg⁻¹s⁻²" },
+    "atm": { name: "Standard atmosphere", unit: "Pa" }
+  };
+  
+  if (constantsInfo[symbol]) {
+    return {
+      symbol: symbol,
+      name: constantsInfo[symbol].name,
+      value: physicalConstants[symbol],
+      unit: constantsInfo[symbol].unit,
+      formatted: formatScientificNotation(physicalConstants[symbol])
+    };
+  }
+  
+  return null;
+};
+
+/**
+ * Lists all available physical constants
+ * @returns {Array} - Array of all constants with their info
+ */
+const listAllConstants = () => {
+  return Object.keys(physicalConstants).map(symbol => getConstantInfo(symbol));
+};
+
+/**
+ * Simple wrapper to get just the calculated value
+ * @param {string} expression - Mathematical expression
+ * @returns {number|null} - The calculated value or null if error
+ */
+const getCalculatedValue = (expression) => {
+  const result = calculateExpression(expression);
+  return result.success ? result.value : null;
+};
+
+/**
+ * Simple wrapper to get formatted result for display
+ * @param {string} expression - Mathematical expression
+ * @returns {string|null} - The formatted result or null if error
+ */
+const getFormattedResult = (expression) => {
+  const result = calculateExpression(expression);
+  return result.success ? result.formatted : null;
+};
+
+// Example usage:
+/*
+// Get just the numerical value
+const answer = getCalculatedValue("mp+mp");
+console.log(answer); // 3.34524379642e-27
+
+// Get formatted result for display
+const displayResult = getFormattedResult("mp+mp");
+console.log(displayResult); // "3.345244e-27"
+
+// Original function still available for full details
+const fullResult = calculateExpression("mp+mp");
+console.log(fullResult.value); // 3.34524379642e-27
+*/
+
+// Export the functions for use in React Native
+export {
+  calculateExpression,
+  getCalculatedValue,
+  getFormattedResult,
+  getConstantInfo,
+  listAllConstants,
+  physicalConstants
+};

@@ -4,7 +4,7 @@ import { factorial , PI,E,abs,sqrt, div_mul, divide, cbrt, square, cube, x_yrt,
   makeNegative, computeLog10, computeLn,computeLogBase, 
   computeSummation,taylorSin,taylorTan,taylorCos,taylorAsin,taylorAcos,taylorAtan,
 taylorSinh,taylorCosh,taylorTanh,taylorAsinh,taylorAcosh,taylorAtanh,initDB,insertRecord,computeIntegration,computeDerivative,
-Rand,advancedIntegration,symbolicDerivative,tenPower,RanSharp,RanInt,config} from "./Screens/AllLogics";
+Rand,advancedIntegration,symbolicDerivative,tenPower,RanSharp,RanInt,config,getCalculatedValue} from "./Screens/AllLogics";
 import { computeArg,computecongj,compute_abi,computePolar,parseComplex,computeRectangular } from "./Screens/ComplexModeLogics";
 
 
@@ -129,6 +129,8 @@ const HandleNumberClick=(number)=>{
   }
  
 else if(shift===true && number==='7'){
+    config.expression=config.expression+expressionInput
+    console.log('expression shift seven pa'+config.expression)
     navigation.navigate('Shiftseven')
   }
 
@@ -612,20 +614,43 @@ else if(eqvalues!=null){
   setCursorPosition(currentPos + 8);  
   seteqvalues(null)
 }
-  else if (shiftSeven !== null && shiftSeven2 !== null) {
-  console.log('before= ' + shiftSeven);
+  else if (shiftSeven !== null && shiftSeven2 !== null && shift===false) {
+  
+     let num=config.count
+     console.log(num)
+    if (num==0){
+      
+      console.log('pehla count')
 
   const currentPos = cursorPosition !== null ? cursorPosition : expressionInput.length;
+  
   const newExpression = expressionInput.substring(0, currentPos) + shiftSeven + expressionInput.substring(currentPos);
   setExpressionInput(newExpression);
+ 
+  setShiftSeven(null)
+  setShiftSeven2(null)
+  config.count=config.count+1
 
-  // Clear after use
+    }
+    else if (num>0){
+     
+      console.log('dosra count')
+
+  const currentPos = cursorPosition !== null ? cursorPosition : config.expression.length;
   
-
-  console.log('after= ' + shiftSeven);  // Will still show old value because it's not updated immediately
+  const newExpression = expressionInput.substring(0, currentPos) + config.expression+shiftSeven + expressionInput.substring(currentPos);
+  setExpressionInput(newExpression);
+  
+  console.log('expression='+ config.expression)
+  setShiftSeven(null)
+  setShiftSeven2(null)
+    }
+  //config.ANS=config.ANS+shiftSeven2
+    // Will still show old value because it's not updated immediately
 }
 else if (shifttwo != null) {
   const currentPos = cursorPosition !== null ? cursorPosition : expressionInput.length;
+  
   const newExpression = expressionInput.substring(0, currentPos) +lastresult+shifttwo + expressionInput.substring(currentPos);
   setExpressionInput(newExpression);
   setshifttwo(null);
@@ -948,14 +973,25 @@ const handleRand = () => {
       setanswers(null);
     }
 
-     else if (shiftSeven) {
-      setResult(shiftSeven2);
+     else if (config.ANS!=='') {
+      
+        
+        console.log('asnwer='+ config.ANS)
+        
+        
+        console.log('expression=' +expressionInput)
+        const answer=getCalculatedValue(expressionInput)
+        console.log(answer.toString())
+      setResult(answer.toString());
+      console.log('result hai bhai='+answer)
       insertRecord(shiftSeven,shiftSeven2)
-      console.log(shiftSeven);
+      
 
       // Clear
       setShiftSeven(null);
       setShiftSeven2(null);
+      config.ANS=answer
+      config.expression=""
     }
     
 
