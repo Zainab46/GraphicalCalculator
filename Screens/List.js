@@ -5,8 +5,7 @@ export const modes={"simplemodes":[
 {id:'4',name:'BASE-N'},
 {id:'5',name:'EQN'},
 {id:'6',name:'MATRIX'},
-{id:'7',name:'TABLE'},
-{id:'8',name:'VECTOR'}
+{id:'7',name:'VECTOR'}
 ],
 "shiftmode":[
 {id:'1',name:'MthIO'},

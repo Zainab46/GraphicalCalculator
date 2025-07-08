@@ -12,6 +12,10 @@ export const config = {
   ANS: "",
   expression:"",
   count:'0',
+  A:'0',
+  B:'0',
+  C:'0',
+  D:'0'
 };
 
 // Helper function to convert input to radians based on current mode
@@ -1264,3 +1268,112 @@ export {
   listAllConstants,
   physicalConstants
 };
+
+/**
+ * Performs mathematical operations on config variables A, B, C, D
+ * @param {string} operation - Operation string (e.g., "A=20", "AX20", "A+B", "A-10")
+ * @returns {string|number} - Result of the operation or updated variable value
+ */
+export function performOperation(operation) {
+  // Remove spaces and convert to uppercase
+  const cleanOp = operation.replace(/\s+/g, '').toUpperCase();
+  
+  // Valid variables
+  const validVars = ['A', 'B', 'C', 'D'];
+  
+  // Assignment operation (=)
+  if (cleanOp.includes('=')) {
+    const [variable, value] = cleanOp.split('=');
+    
+    if (validVars.includes(variable)) {
+      const numValue = parseFloat(value);
+      if (!isNaN(numValue)) {
+        config[variable] = numValue.toString();
+        return config[variable];
+      } else {
+        throw new Error(`Invalid value: ${value}`);
+      }
+    } else {
+      throw new Error(`Invalid variable: ${variable}`);
+    }
+  }
+  
+  // Parse operation with operators
+  const operatorRegex = /([ABCD])([\+\-\*\/X])(\d+(?:\.\d+)?|[ABCD])/;
+  const match = cleanOp.match(operatorRegex);
+  
+  if (match) {
+    const [, variable, operator, operand] = match;
+    
+    // Get the current value of the variable
+    const currentValue = parseFloat(config[variable]);
+    
+    // Get the operand value (either a number or another variable)
+    let operandValue;
+    if (validVars.includes(operand)) {
+      operandValue = parseFloat(config[operand]);
+    } else {
+      operandValue = parseFloat(operand);
+    }
+    
+    if (isNaN(currentValue) || isNaN(operandValue)) {
+      throw new Error('Invalid numeric values');
+    }
+    
+    let result;
+    switch (operator) {
+      case '+':
+        result = currentValue + operandValue;
+        break;
+      case '-':
+        result = currentValue - operandValue;
+        break;
+      case '*':
+      case 'X':
+        result = currentValue * operandValue;
+        break;
+      case '/':
+        if (operandValue === 0) {
+          throw new Error('Division by zero');
+        }
+        result = currentValue / operandValue;
+        break;
+      default:
+        throw new Error(`Invalid operator: ${operator}`);
+    }
+    
+    // Update the variable with the result
+    config[variable] = result.toString();
+    return result;
+  }
+  
+  // Complex expression evaluation (e.g., "A+B*C")
+  const complexExpressionRegex = /^[ABCD\+\-\*\/X\(\)\d\.\s]+$/;
+  if (complexExpressionRegex.test(cleanOp)) {
+    let expression = cleanOp;
+    
+    // Replace variables with their values
+    validVars.forEach(variable => {
+      const regex = new RegExp(variable, 'g');
+      expression = expression.replace(regex, config[variable]);
+    });
+    
+    // Replace X with *
+    expression = expression.replace(/X/g, '*');
+    
+    try {
+      // Evaluate the expression safely
+      const result = Function(`"use strict"; return (${expression})`)();
+      return result;
+    } catch (error) {
+      throw new Error('Invalid expression');
+    }
+  }
+  
+  // Single variable retrieval
+  if (validVars.includes(cleanOp)) {
+    return parseFloat(config[cleanOp]);
+  }
+  
+  throw new Error(`Invalid operation: ${operation}`);
+}

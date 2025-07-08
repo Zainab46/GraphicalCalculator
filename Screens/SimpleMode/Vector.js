@@ -1,120 +1,113 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { config, performOperation } from '../AllLogics'; // Import both config and performOperation function
 
 const VectorCalculator = ({ navigation }) => {
-  const [dimension, setDimension] = useState('2');
-  const [vectorInput, setVectorInput] = useState([]);
-  const [savedVectors, setSavedVectors] = useState({ A: null, B: null, C: null });
+  // State for 3 vector inputs (A, B, C) - each with x, y, z components
+  const [vectorA, setVectorA] = useState(['', '', '']);
+  const [vectorB, setVectorB] = useState(['', '', '']);
+  const [vectorC, setVectorC] = useState(['', '', '']);
+  
   const [operation, setOperation] = useState('add');
   const [result, setResult] = useState('');
   const [vectorDisplay, setVectorDisplay] = useState('');
-  const [autoSaveDisabled, setAutoSaveDisabled] = useState(false);
 
-  // Initialize vectorInput based on dimension
-  useEffect(() => {
-    const dim = parseInt(dimension) || 2;
-    const newInput = new Array(dim).fill('');
-    setVectorInput(newInput);
-    setAutoSaveDisabled(false); // Reset auto-save when dimension changes
-  }, [dimension]);
-
-  // Memoized function to check if all inputs are filled and valid
-  const checkIfAllFilled = useCallback((inputs) => {
-    return inputs.length > 0 && inputs.every(val => val !== '' && !isNaN(parseFloat(val)));
-  }, []);
-
-  // Auto-save vector when all components are filled
-  useEffect(() => {
-    if (autoSaveDisabled || vectorInput.length === 0) return;
-
-    const allFilled = checkIfAllFilled(vectorInput);
-    
-    if (allFilled) {
-      const vector = vectorInput.map(val => parseFloat(val));
-      
-      setSavedVectors(prev => {
-        // Check if this exact vector is already saved to prevent unnecessary updates
-        const vectorStr = vector.join(',');
-        const existingVectors = Object.values(prev).filter(v => v !== null);
-        const alreadySaved = existingVectors.some(v => v.join(',') === vectorStr);
-        
-        if (alreadySaved) return prev;
-
-        if (!prev.A) return { ...prev, A: vector };
-        if (!prev.B) return { ...prev, B: vector };
-        if (!prev.C) return { ...prev, C: vector };
-        return prev;
-      });
-
-      // Clear inputs and disable auto-save
-      setVectorInput(new Array(vectorInput.length).fill(''));
-      setAutoSaveDisabled(true);
+  const handleVectorChange = (vectorType, index, value) => {
+    switch (vectorType) {
+      case 'A':
+        setVectorA(prev => {
+          const newVector = [...prev];
+          newVector[index] = value;
+          return newVector;
+        });
+        break;
+      case 'B':
+        setVectorB(prev => {
+          const newVector = [...prev];
+          newVector[index] = value;
+          return newVector;
+        });
+        break;
+      case 'C':
+        setVectorC(prev => {
+          const newVector = [...prev];
+          newVector[index] = value;
+          return newVector;
+        });
+        break;
     }
-  }, [vectorInput, autoSaveDisabled, checkIfAllFilled]);
-
-  // Re-enable auto-save when inputs are cleared
-  useEffect(() => {
-    const allEmpty = vectorInput.every(val => val === '');
-    if (allEmpty && autoSaveDisabled) {
-      setAutoSaveDisabled(false);
-    }
-  }, [vectorInput, autoSaveDisabled]);
-
-  const handleDimensionChange = (value) => {
-    const dim = value.replace(/[^0-9]/g, '');
-    setDimension(dim);
-  };
-
-  const handleVectorChange = (index, value) => {
-    setVectorInput(prev => {
-      const newInput = [...prev];
-      newInput[index] = value;
-      return newInput;
-    });
   };
 
   const parseVector = (vec) => vec.map(val => parseFloat(val) || 0);
 
-  const calculate = () => {
-    const a = savedVectors.A ? parseVector(savedVectors.A) : null;
-    const b = savedVectors.B ? parseVector(savedVectors.B) : null;
-    const c = savedVectors.C ? parseVector(savedVectors.C) : null;
+  const isValidVector = (vec) => {
+    return vec.every(val => val !== '' && !isNaN(parseFloat(val)));
+  };
 
-    if (!a || !b) {
-      setResult('Please save at least two vectors (A and B)');
+  const calculate = () => {
+    // Check if we have at least vectors A and B filled
+    if (!isValidVector(vectorA) || !isValidVector(vectorB)) {
+      setResult('Please fill in at least vectors A and B with valid numbers');
       return;
     }
 
+    const a = parseVector(vectorA);
+    const b = parseVector(vectorB);
+    const c = isValidVector(vectorC) ? parseVector(vectorC) : null;
+
     let res = '';
     let questionString = '';
+    let resultVector = null;
 
     switch (operation) {
       case 'add':
         if (c) {
           // A + B + C
-          res = `(${a.map((val, i) => val + b[i] + c[i]).join(', ')})`;
+          resultVector = a.map((val, i) => val + b[i] + c[i]);
+          res = `(${resultVector.join(', ')})`;
           questionString = `vectA+vectB+vectC`;
         } else {
           // A + B
-          res = `(${a.map((val, i) => val + b[i]).join(', ')})`;
+          resultVector = a.map((val, i) => val + b[i]);
+          res = `(${resultVector.join(', ')})`;
           questionString = `vectA+vectB`;
         }
         break;
       case 'subtract':
         if (c) {
           // A - B - C
-          res = `(${a.map((val, i) => val - b[i] - c[i]).join(', ')})`;
+          resultVector = a.map((val, i) => val - b[i] - c[i]);
+          res = `(${resultVector.join(', ')})`;
           questionString = `vectA-vectB-vectC`;
         } else {
           // A - B
-          res = `(${a.map((val, i) => val - b[i]).join(', ')})`;
+          resultVector = a.map((val, i) => val - b[i]);
+          res = `(${resultVector.join(', ')})`;
           questionString = `vectA-vectB`;
         }
         break;
       case 'dot':
         // Dot product only works with two vectors
-        res = a.reduce((sum, val, i) => sum + val * b[i], 0).toFixed(2);
+        const dotResult = a.reduce((sum, val, i) => sum + val * b[i], 0);
+        res = dotResult.toFixed(2);
         questionString = `vectA⋅vectB`;
+        // For scalar results, we'll store the value in A
+        resultVector = [dotResult, 0, 0];
+        break;
+      case 'cross':
+        // Cross product only works with 3D vectors (A × B)
+        if (a.length >= 3 && b.length >= 3) {
+          resultVector = [
+            a[1] * b[2] - a[2] * b[1],
+            a[2] * b[0] - a[0] * b[2],
+            a[0] * b[1] - a[1] * b[0]
+          ];
+          res = `(${resultVector.join(', ')})`;
+          questionString = `vectA×vectB`;
+        } else {
+          res = 'Cross product requires 3D vectors';
+          questionString = 'Invalid';
+        }
         break;
       default:
         res = 'Invalid Operation';
@@ -123,44 +116,99 @@ const VectorCalculator = ({ navigation }) => {
 
     setResult(res);
 
-    // Navigate to main screen with simple data
-    if (navigation && res !== 'Invalid Operation') {
-      navigation.navigate('Main', { 
-        vector: questionString,
-        vecresult: res
-      });
+    // Save result to config based on operation using performOperation function
+    if (res !== 'Invalid Operation' && res !== 'Cross product requires 3D vectors' && resultVector) {
+      try {
+        // Store the result vector components in config.A, config.B, config.C
+        if (operation === 'add') {
+          // Store addition result in A, B, C
+          performOperation(`A=${resultVector[0]}`);
+          performOperation(`B=${resultVector[1]}`);
+          performOperation(`C=${resultVector[2]}`);
+        } else if (operation === 'subtract') {
+          // Store subtraction result in A, B, C
+          performOperation(`A=${resultVector[0]}`);
+          performOperation(`B=${resultVector[1]}`);
+          performOperation(`C=${resultVector[2]}`);
+        } else if (operation === 'dot') {
+          // Store dot product result in A, clear B and C
+          performOperation(`A=${resultVector[0]}`);
+          performOperation(`B=0`);
+          performOperation(`C=0`);
+        } else if (operation === 'cross') {
+          // Store cross product result in A, B, C
+          performOperation(`A=${resultVector[0]}`);
+          performOperation(`B=${resultVector[1]}`);
+          performOperation(`C=${resultVector[2]}`);
+        }
+        
+        console.log('Updated config values:', {
+          A: config.A,
+          B: config.B,
+          C: config.C
+        });
+      } catch (error) {
+        console.error('Error updating config:', error);
+      }
+
+      // Navigate to main screen with result
+      if (navigation) {
+        navigation.navigate('Main', { 
+          vector: questionString,
+          vecresult: res
+        });
+      }
     }
   };
 
   const showVectors = () => {
-    const display = Object.entries(savedVectors)
-      .filter(([_, vec]) => vec)
-      .map(([key, vec]) => `${key}: (${vec.join(', ')})`)
-      .join('\n');
-    setVectorDisplay(display || 'No vectors saved');
+    const display = [
+      `A: ${config.A}`,
+      `B: ${config.B}`,
+      `C: ${config.C}`
+    ].join('\n');
+    setVectorDisplay(display);
   };
 
   const clearVectors = () => {
-    setSavedVectors({ A: null, B: null, C: null });
-    setVectorDisplay('');
-    setResult('');
-    setAutoSaveDisabled(false);
+    try {
+      // Use performOperation to properly set values to 0
+      performOperation('A=0');
+      performOperation('B=0');
+      performOperation('C=0');
+      
+      setVectorDisplay('');
+      setResult('');
+      // Also clear input fields
+      setVectorA(['', '', '']);
+      setVectorB(['', '', '']);
+      setVectorC(['', '', '']);
+      
+      console.log('Cleared config values:', {
+        A: config.A,
+        B: config.B,
+        C: config.C
+      });
+    } catch (error) {
+      console.error('Error clearing vectors:', error);
+    }
   };
 
-  const renderVectorInputs = () => {
-    const dim = parseInt(dimension) || 2;
+  const renderVectorInput = (vectorType, vectorState, label) => {
     return (
       <View style={styles.vectorContainer}>
-        <Text style={styles.label}>Vector Input</Text>
-        {Array.from({ length: dim }).map((_, index) => (
-          <TextInput
-            key={index}
-            style={styles.input}
-            placeholder={`x${index + 1}`}
-            keyboardType="numeric"
-            value={vectorInput[index] || ''}
-            onChangeText={(val) => handleVectorChange(index, val)}
-          />
+        <Text style={styles.vectorLabel}>{label}:</Text>
+        {['x', 'y', 'z'].map((component, index) => (
+          <View key={index} style={styles.inputContainer}>
+            <Text style={styles.componentLabel}>{component}</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="0"
+              keyboardType="numeric"
+              value={vectorState[index]}
+              onChangeText={(val) => handleVectorChange(vectorType, index, val)}
+            />
+          </View>
         ))}
       </View>
     );
@@ -169,30 +217,32 @@ const VectorCalculator = ({ navigation }) => {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.heading}>Vector Calculator</Text>
+      <Text style={styles.subHeading}>3D Vector Operations</Text>
 
-      <Text style={styles.subHeading}>Dimension:</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Enter dimension (e.g., 2, 3)"
-        keyboardType="numeric"
-        value={dimension}
-        onChangeText={handleDimensionChange}
-      />
-
-      {renderVectorInputs()}
+      {/* Vector A Input */}
+      {renderVectorInput('A', vectorA, 'Vector A')}
+      
+      {/* Vector B Input */}
+      {renderVectorInput('B', vectorB, 'Vector B')}
+      
+      {/* Vector C Input */}
+      {renderVectorInput('C', vectorC, 'Vector C')}
 
       <Text style={styles.subHeading}>Operation:</Text>
       <View style={styles.operations}>
-        {['add', 'subtract', 'dot'].map(op => (
+        {[
+          { key: 'add', label: 'A + B + C' },
+          { key: 'subtract', label: 'A - B - C' },
+          { key: 'dot', label: 'A ⋅ B' },
+          { key: 'cross', label: 'A × B' }
+        ].map(op => (
           <TouchableOpacity
-            key={op}
-            onPress={() => setOperation(op)}
-            style={[styles.opButton, operation === op && styles.opButtonActive]}
+            key={op.key}
+            onPress={() => setOperation(op.key)}
+            style={[styles.opButton, operation === op.key && styles.opButtonActive]}
           >
-            <Text style={[styles.opText, operation === op && styles.opTextActive]}>
-              {op === 'add' && 'A + B'}
-              {op === 'subtract' && 'A - B'}
-              {op === 'dot' && 'A ⋅ B'}
+            <Text style={[styles.opText, operation === op.key && styles.opTextActive]}>
+              {op.label}
             </Text>
           </TouchableOpacity>
         ))}
@@ -213,7 +263,7 @@ const VectorCalculator = ({ navigation }) => {
       <Text style={styles.resultLabel}>Result:</Text>
       <Text style={styles.result}>{result}</Text>
 
-      <Text style={styles.resultLabel}>Saved Vectors:</Text>
+      <Text style={styles.resultLabel}>Values (A, B, C):</Text>
       <Text style={styles.result}>{vectorDisplay}</Text>
     </ScrollView>
   );
@@ -222,25 +272,52 @@ const VectorCalculator = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: { padding: 20, backgroundColor: '#f5f5f5', flexGrow: 1 },
   heading: { fontSize: 24, fontWeight: 'bold', textAlign: 'center', marginVertical: 10 },
-  subHeading: { fontSize: 16, marginTop: 10 },
-  vectorContainer: { flexDirection: 'row', alignItems: 'center', marginVertical: 10, flexWrap: 'wrap' },
-  label: { width: 80, fontWeight: 'bold' },
+  subHeading: { fontSize: 16, marginTop: 15, marginBottom: 10, fontWeight: '600' },
+  vectorContainer: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    marginVertical: 8, 
+    backgroundColor: '#fff',
+    padding: 10,
+    borderRadius: 8,
+    elevation: 1
+  },
+  vectorLabel: { 
+    width: 80, 
+    fontWeight: 'bold', 
+    fontSize: 16,
+    color: '#333' 
+  },
+  inputContainer: {
+    alignItems: 'center',
+    marginHorizontal: 8
+  },
+  componentLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 2
+  },
   input: {
     borderWidth: 1,
     borderColor: '#ccc',
     padding: 8,
-    marginHorizontal: 5,
-    marginVertical: 5,
     borderRadius: 6,
-    width: 60,
-    backgroundColor: '#fff'
+    width: 50,
+    backgroundColor: '#fff',
+    textAlign: 'center'
   },
-  operations: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginVertical: 10 },
+  operations: { 
+    flexDirection: 'row', 
+    flexWrap: 'wrap', 
+    gap: 10, 
+    marginVertical: 15,
+    justifyContent: 'space-around' 
+  },
   opButton: {
     backgroundColor: '#eee',
-    padding: 10,
+    padding: 12,
     borderRadius: 8,
-    minWidth: 70,
+    minWidth: 80,
     alignItems: 'center',
     margin: 5
   },
@@ -249,7 +326,8 @@ const styles = StyleSheet.create({
   },
   opText: {
     color: '#000',
-    fontWeight: 'bold'
+    fontWeight: 'bold',
+    fontSize: 14
   },
   opTextActive: {
     color: '#fff'
@@ -257,21 +335,21 @@ const styles = StyleSheet.create({
   calcButton: {
     marginTop: 20,
     backgroundColor: '#6200ee',
-    padding: 12,
+    padding: 15,
     borderRadius: 8,
     alignItems: 'center'
   },
   showButton: {
     marginTop: 10,
     backgroundColor: '#388e3c',
-    padding: 12,
+    padding: 15,
     borderRadius: 8,
     alignItems: 'center'
   },
   clearButton: {
     marginTop: 10,
     backgroundColor: '#d32f2f',
-    padding: 12,
+    padding: 15,
     borderRadius: 8,
     alignItems: 'center'
   },
@@ -280,13 +358,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold'
   },
-  resultLabel: { marginTop: 20, fontSize: 16, fontWeight: 'bold' },
+  resultLabel: { 
+    marginTop: 20, 
+    fontSize: 16, 
+    fontWeight: 'bold',
+    color: '#333' 
+  },
   result: {
-    fontSize: 18,
+    fontSize: 16,
     marginTop: 10,
     backgroundColor: '#fff',
-    padding: 10,
-    borderRadius: 6
+    padding: 15,
+    borderRadius: 6,
+    minHeight: 50
   }
 });
 

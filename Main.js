@@ -4,7 +4,7 @@ import { factorial , PI,E,abs,sqrt, div_mul, divide, cbrt, square, cube, x_yrt,
   makeNegative, computeLog10, computeLn,computeLogBase, 
   computeSummation,taylorSin,taylorTan,taylorCos,taylorAsin,taylorAcos,taylorAtan,
 taylorSinh,taylorCosh,taylorTanh,taylorAsinh,taylorAcosh,taylorAtanh,initDB,insertRecord,computeIntegration,computeDerivative,
-Rand,advancedIntegration,symbolicDerivative,tenPower,RanSharp,RanInt,config,getCalculatedValue} from "./Screens/AllLogics";
+Rand,advancedIntegration,symbolicDerivative,tenPower,RanSharp,RanInt,config,getCalculatedValue,performOperation} from "./Screens/AllLogics";
 import { computeArg,computecongj,compute_abi,computePolar,parseComplex,computeRectangular } from "./Screens/ComplexModeLogics";
 
 
@@ -617,8 +617,9 @@ else if(eqvalues!=null){
   else if (shiftSeven !== null && shiftSeven2 !== null && shift===false) {
   
      let num=config.count
+     num=config.count+1
      console.log(num)
-    if (num==0){
+    if (num==1){
       
       console.log('pehla count')
 
@@ -632,7 +633,7 @@ else if(eqvalues!=null){
   config.count=config.count+1
 
     }
-    else if (num>0){
+    else if (num>1){
      
       console.log('dosra count')
 
@@ -651,7 +652,7 @@ else if(eqvalues!=null){
 else if (shifttwo != null) {
   const currentPos = cursorPosition !== null ? cursorPosition : expressionInput.length;
   
-  const newExpression = expressionInput.substring(0, currentPos) +lastresult+shifttwo + expressionInput.substring(currentPos);
+  const newExpression = expressionInput.substring(0, currentPos) +shifttwo + expressionInput.substring(currentPos);
   setExpressionInput(newExpression);
   setshifttwo(null);
 }
@@ -932,9 +933,27 @@ const handleRand = () => {
     if (shift===true && expressionInput===''){
       navigation.navigate('History')
     }
+    else if (vecresults) {
+      setResult(vecresults);
+      config.ANS=vecresults
+      insertRecord(vectors,vecresults)
+      console.log(vecresults);
+
+      // Clear
+      setvecresults(null);
+      setvectors(null);
+    }
+
+    else if (expressionInput.includes('A')||expressionInput.includes('B')||expressionInput.includes('C')||expressionInput.includes('D')){
+      console.log(expressionInput)
+      const abcd=performOperation(expressionInput);
+      console.log('abcd wala=' +abcd)
+      setResult(abcd.toString())
+    }
   
     else if (eqvaluesresult) {
       setResult(eqvaluesresult);
+      config.ANS=eqvaluesresult
       insertRecord(eqvalues,eqvaluesresult)
       console.log(eqvaluesresult);
 
@@ -946,6 +965,7 @@ const handleRand = () => {
     
     else if (baseresults) {
       setResult(baseresults);
+      config.ANS=baseresults
       insertRecord(bases,baseresults)
       console.log(baseresults);
 
@@ -954,17 +974,10 @@ const handleRand = () => {
       setbases(null);
     }
 
-    else if (vecresults) {
-      setResult(vecresults);
-      insertRecord(vectors,vecresults)
-      console.log(vecresults);
-
-      // Clear
-      setvecresults(null);
-      setvectors(null);
-    }
+    
     else if (answers) {
       setResult(answers);
+      config.ANS=answers
       insertRecord(questions,answers)
       console.log(answers);
 
@@ -973,7 +986,7 @@ const handleRand = () => {
       setanswers(null);
     }
 
-     else if (config.ANS!=='') {
+     else if (config.ANS!==''&& config.count!=='0') {
       
         
         console.log('asnwer='+ config.ANS)
@@ -1004,7 +1017,7 @@ const handleRand = () => {
   setResult(result.toString());
   console.log('ya hai last result '+result.toString())
   setLastResult(result.toString());
-  console.log(lastresult)
+  config.ANS=result
   insertRecord(expressionInput, result);
   
 }

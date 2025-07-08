@@ -32,11 +32,7 @@ function SimpleMode({navigation,ActualMode,setActualMode}){
         navigation.navigate('Matrix');
      }
     else if(id=='7'){
-        setActualMode('TABLE');
-        navigation.navigate('Table');
-     }
-     else if(id=='8'){
-        setActualMode('VECTOR');
+       setActualMode('VECTOR');
         navigation.navigate('Vector')
      }
  
