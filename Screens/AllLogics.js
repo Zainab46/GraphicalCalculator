@@ -1377,3 +1377,10 @@ export function performOperation(operation) {
   
   throw new Error(`Invalid operation: ${operation}`);
 }
+
+
+export function computeAbs(value) {
+  const number = parseFloat(value);
+  if (isNaN(number)) return "Invalid Input";
+  return Math.abs(number);
+}
