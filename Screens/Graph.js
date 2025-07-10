@@ -1,139 +1,225 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
-  ScrollView,
   StyleSheet,
   Alert,
   Dimensions,
   PanResponder,
 } from 'react-native';
-import Svg, { Path, Line, Text as SvgText, G, Rect, Circle } from 'react-native-svg';
+import Svg, { Path, Line, Text as SvgText, G, Circle } from 'react-native-svg';
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get('window');
 
+/**
+ * Enhanced Graph component with improved zoom and drag functionality
+ */
 const Graph = ({ route }) => {
   const { grapequation } = route.params;
-  
-  const [startValue, setStartValue] = useState('1');
+  const [startValue, setStartValue] = useState('-10');
   const [endValue, setEndValue] = useState('10');
   const [showInputs, setShowInputs] = useState(true);
   const [graphData, setGraphData] = useState(null);
+  const [equationType, setEquationType] = useState('function');
+  const [processedEquation, setProcessedEquation] = useState('');
   
-  // Viewport states - shows only a portion of the full graph
-  const [viewportX, setViewportX] = useState(0); // Current viewport X position
-  const [viewportY, setViewportY] = useState(0); // Current viewport Y position
-  const [viewportWidth, setViewportWidth] = useState(15); // How many X units to show
-  const [viewportHeight, setViewportHeight] = useState(15); // How many Y units to show
+  // Enhanced viewport state management
+  const [viewportX, setViewportX] = useState(0);
+  const [viewportY, setViewportY] = useState(0);
+  const [viewportWidth, setViewportWidth] = useState(20);
+  const [viewportHeight, setViewportHeight] = useState(20);
+  const [scale, setScale] = useState(1);
   
-  // Zoom states
-  const [zoomLevel, setZoomLevel] = useState(1);
-  
-  // Cursor states
+  // Cursor state
   const [cursorVisible, setCursorVisible] = useState(false);
   const [cursorX, setCursorX] = useState(0);
   const [cursorY, setCursorY] = useState(0);
   const [cursorValue, setCursorValue] = useState({ x: 0, y: 0 });
-  
-  // Refs for gesture handling
-  const lastPanRef = useRef({ x: 0, y: 0 });
-  const isDraggingRef = useRef(false);
 
-  // Function to safely evaluate mathematical expressions
+  // Enhanced gesture tracking
+  const gestureStateRef = useRef({
+    isPanning: false,
+    isZooming: false,
+    initialDistance: 0,
+    initialScale: 1,
+    initialViewport: { x: 0, y: 0, width: 20, height: 20 },
+    lastPan: { x: 0, y: 0 },
+    initialCenter: { x: 0, y: 0 },
+  });
+
+  // Helper function to calculate distance between two touches
+  const getDistance = (touches) => {
+    if (touches.length < 2) return 0;
+    const dx = touches[0].pageX - touches[1].pageX;
+    const dy = touches[0].pageY - touches[1].pageY;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
+  // Helper function to get center point between two touches
+  const getCenter = (touches) => {
+    if (touches.length < 2) return { x: 0, y: 0 };
+    return {
+      x: (touches[0].locationX + touches[1].locationX) / 2,
+      y: (touches[0].locationY + touches[1].locationY) / 2,
+    };
+  };
+
+  // Preprocess equation to JavaScript syntax
+  const preprocessEquation = (equation) => {
+    let processed = equation.trim();
+    if (processed.includes('f(x)=') || processed.includes('y=')) {
+      setEquationType('function');
+      processed = processed.replace(/f\(x\)\s*=\s*/, '').replace(/y\s*=\s*/, '');
+    } else if (processed.includes('=')) {
+      setEquationType('equation');
+    } else {
+      setEquationType('function');
+    }
+
+    processed = processed
+      .replace(/X/g, 'x')
+      .replace(/π/g, 'Math.PI')
+      .replace(/e/g, 'Math.E')
+      .replace(/÷/g, '/')
+      .replace(/×/g, '*')
+      .replace(/tan⁻¹/g, 'Math.atan')
+      .replace(/sin⁻¹/g, 'Math.asin')
+      .replace(/cos⁻¹/g, 'Math.acos')
+      .replace(/arctan/g, 'Math.atan')
+      .replace(/arcsin/g, 'Math.asin')
+      .replace(/arccos/g, 'Math.acos')
+      .replace(/sinh/g, 'Math.sinh')
+      .replace(/cosh/g, 'Math.cosh')
+      .replace(/tanh/g, 'Math.tanh')
+      .replace(/sin/g, 'Math.sin')
+      .replace(/cos/g, 'Math.cos')
+      .replace(/tan/g, 'Math.tan')
+      .replace(/log10/g, 'Math.log10')
+      .replace(/log2/g, 'Math.log2')
+      .replace(/log/g, 'Math.log10')
+      .replace(/ln/g, 'Math.log')
+      .replace(/sqrt/g, 'Math.sqrt')
+      .replace(/abs/g, 'Math.abs')
+      .replace(/exp/g, 'Math.exp')
+      .replace(/²/g, '^2')
+      .replace(/³/g, '^3')
+      .replace(/\^/g, '**')
+      .replace(/(\d)\(/g, '$1*(')
+      .replace(/\)(\d)/g, ')*$1')
+      .replace(/(\d)([a-zA-Z])/g, '$1*$2')
+      .replace(/\)([a-zA-Z])/g, ')*$1')
+      .replace(/([a-zA-Z])\(/g, '$1*(');
+
+    setProcessedEquation(processed);
+    return processed;
+  };
+
+  // Evaluate expression for a given x
   const evaluateExpression = (equation, x) => {
     try {
-      let expr = equation
-        .replace(/X/g, 'x')
-        .replace(/²/g, '^2')
-        .replace(/³/g, '^3')
-        .replace(/⁴/g, '^4')
-        .replace(/⁵/g, '^5')
-        .replace(/⁶/g, '^6')
-        .replace(/⁷/g, '^7')
-        .replace(/⁸/g, '^8')
-        .replace(/⁹/g, '^9')
-        .replace(/π/g, 'Math.PI')
-        .replace(/÷/g, '/')
-        .replace(/×/g, '*')
-        .replace(/x/g, `(${x})`)
-        .replace(/sin/g, 'Math.sin')
-        .replace(/cos/g, 'Math.cos')
-        .replace(/tan/g, 'Math.tan')
-        .replace(/log/g, 'Math.log')
-        .replace(/ln/g, 'Math.log')
-        .replace(/sqrt/g, 'Math.sqrt')
-        .replace(/abs/g, 'Math.abs')
-        .replace(/exp/g, 'Math.exp')
-        .replace(/\^/g, '**')
-        .replace(/(\d)\(/g, '$1*(')
-        .replace(/\)(\d)/g, ')*$1')
-        .replace(/(\d)([a-zA-Z])/g, '$1*$2');
-      
-      const func = new Function('return ' + expr);
-      const result = func();
-      
-      return isFinite(result) ? result : null;
+      let expr = preprocessEquation(equation);
+      expr = expr.replace(/\bx\b/g, `(${x})`);
+      const result = Function('x', 'Math', `"use strict"; return (${expr})`)(x, Math);
+      return isNaN(result) || !isFinite(result) ? null : result;
     } catch (error) {
-      console.log('Error evaluating:', equation, 'with x =', x, 'Error:', error.message);
       return null;
     }
   };
 
-  // Generate graph data points for the full range
+  // Solve implicit equations numerically
+  const solveImplicitEquation = (equation, x) => {
+    try {
+      let expr = preprocessEquation(equation);
+      if (!expr.includes('=')) {
+        return evaluateExpression(equation, x);
+      }
+
+      const [leftSide, rightSide] = expr.split('=');
+      let yMin = -100;
+      let yMax = 100;
+      const maxIterations = 50;
+      const tolerance = 1e-6;
+      let iterations = 0;
+
+      while (iterations < maxIterations && Math.abs(yMax - yMin) > tolerance) {
+        const yMid = (yMin + yMax) / 2;
+        const leftValue = evaluateExpression(leftSide.replace(/\by\b/g, `(${yMid})`), x);
+        const rightValue = evaluateExpression(rightSide.replace(/\by\b/g, `(${yMid})`), x);
+
+        if (leftValue === null || rightValue === null) break;
+
+        const diff = leftValue - rightValue;
+        if (Math.abs(diff) < tolerance) {
+          return yMid;
+        }
+
+        if (diff > 0) {
+          yMax = yMid;
+        } else {
+          yMin = yMid;
+        }
+        iterations++;
+      }
+
+      return (yMin + yMax) / 2;
+    } catch (error) {
+      return null;
+    }
+  };
+
+  // Generate graph data
   const generateGraphData = () => {
     const start = parseFloat(startValue);
     const end = parseFloat(endValue);
-    
+
     if (isNaN(start) || isNaN(end)) {
-      Alert.alert('Error', 'Please enter valid numeric values');
+      Alert.alert('Error', 'Please enter valid numeric values for start and end.');
       return;
     }
-    
+
     if (start >= end) {
-      Alert.alert('Error', 'End value must be greater than start value');
+      Alert.alert('Error', 'End value must be greater than start value.');
       return;
     }
-    
+
     const points = [];
-    const step = (end - start) / 2000; // More points for smoother curve
-    
+    const step = (end - start) / 2000;
     let minY = Infinity;
     let maxY = -Infinity;
     let validPoints = 0;
-    
-    // Calculate all points and find global min/max Y
+
     for (let x = start; x <= end; x += step) {
-      const y = evaluateExpression(grapequation, x);
-      if (y !== null && !isNaN(y) && isFinite(y)) {
+      let y = equationType === 'equation' ? solveImplicitEquation(grapequation, x) : evaluateExpression(grapequation, x);
+      if (y !== null && isFinite(y)) {
         minY = Math.min(minY, y);
         maxY = Math.max(maxY, y);
         points.push({ x, y });
         validPoints++;
       }
     }
-    
+
     if (validPoints === 0) {
-      Alert.alert('Error', 'No valid points found. Please check your equation.');
+      Alert.alert('Error', 'No valid points found. Check your equation.');
       return;
     }
-    
-    // Add some padding to Y range
-    const yRange = maxY - minY;
+
+    const yRange = maxY - minY || 1;
     const yPadding = yRange * 0.1;
     const globalMinY = minY - yPadding;
     const globalMaxY = maxY + yPadding;
-    
-    // Set initial viewport to show first portion of the graph
-    const initialViewportWidth = Math.min(15, (end - start) / 2);
-    const initialViewportHeight = Math.min(15, (globalMaxY - globalMinY) / 2);
+
+    // Initialize viewport to show the full graph
+    const initialViewportWidth = end - start;
+    const initialViewportHeight = globalMaxY - globalMinY;
     
     setViewportX(start);
-    setViewportY(globalMinY + (globalMaxY - globalMinY) / 2 - initialViewportHeight / 2);
+    setViewportY(globalMinY);
     setViewportWidth(initialViewportWidth);
     setViewportHeight(initialViewportHeight);
-    
+    setScale(1);
+
     setGraphData({
       allPoints: points,
       globalMinY,
@@ -141,64 +227,139 @@ const Graph = ({ route }) => {
       globalMinX: start,
       globalMaxX: end,
       graphWidth: screenWidth - 40,
-      graphHeight: 400
+      graphHeight: 400,
     });
-    
     setShowInputs(false);
   };
 
-  // Get points visible in current viewport
+  // Get points in viewport
   const getViewportPoints = () => {
     if (!graphData) return [];
-    
+
     const viewportMinX = viewportX;
     const viewportMaxX = viewportX + viewportWidth;
     const viewportMinY = viewportY;
     const viewportMaxY = viewportY + viewportHeight;
-    
-    // Filter points within viewport
-    const visiblePoints = graphData.allPoints.filter(point => 
-      point.x >= viewportMinX && point.x <= viewportMaxX &&
-      point.y >= viewportMinY && point.y <= viewportMaxY
+
+    const visiblePoints = graphData.allPoints.filter(
+      (point) => point.x >= viewportMinX && point.x <= viewportMaxX && point.y >= viewportMinY && point.y <= viewportMaxY
     );
-    
-    // Convert to screen coordinates
-    return visiblePoints.map(point => ({
+
+    return visiblePoints.map((point) => ({
       x: point.x,
       y: point.y,
       screenX: ((point.x - viewportMinX) / viewportWidth) * graphData.graphWidth,
-      screenY: graphData.graphHeight - ((point.y - viewportMinY) / viewportHeight) * graphData.graphHeight
+      screenY: graphData.graphHeight - ((point.y - viewportMinY) / viewportHeight) * graphData.graphHeight,
     }));
   };
 
-  // Pan responder for handling touch gestures
+  // Convert screen coordinates to graph coordinates
+  const screenToGraph = (screenX, screenY) => {
+    if (!graphData) return { x: 0, y: 0 };
+    
+    const graphX = viewportX + (screenX / graphData.graphWidth) * viewportWidth;
+    const graphY = viewportY + ((graphData.graphHeight - screenY) / graphData.graphHeight) * viewportHeight;
+    
+    return { x: graphX, y: graphY };
+  };
+
+  // Enhanced pan and zoom gesture handling
   const panResponder = PanResponder.create({
     onStartShouldSetPanResponder: () => true,
     onMoveShouldSetPanResponder: () => true,
     
     onPanResponderGrant: (evt) => {
-      lastPanRef.current = { x: viewportX, y: viewportY };
-      isDraggingRef.current = false;
+      const { touches } = evt.nativeEvent;
+      const gestureState = gestureStateRef.current;
       
-      // Show cursor at touch point
-      const touchX = evt.nativeEvent.locationX;
-      const touchY = evt.nativeEvent.locationY;
-      updateCursorPosition(touchX, touchY);
-      setCursorVisible(true);
+      // Reset gesture state
+      gestureState.isPanning = false;
+      gestureState.isZooming = false;
+      
+      if (touches.length === 1) {
+        // Single touch - prepare for panning and show cursor
+        gestureState.isPanning = true;
+        gestureState.lastPan = { x: viewportX, y: viewportY };
+        
+        const touchX = touches[0].locationX;
+        const touchY = touches[0].locationY;
+        updateCursorPosition(touchX, touchY);
+        setCursorVisible(true);
+        
+      } else if (touches.length === 2) {
+        // Two touches - prepare for zooming
+        gestureState.isZooming = true;
+        gestureState.initialDistance = getDistance(touches);
+        gestureState.initialScale = scale;
+        gestureState.initialViewport = { 
+          x: viewportX, 
+          y: viewportY, 
+          width: viewportWidth, 
+          height: viewportHeight 
+        };
+        gestureState.initialCenter = getCenter(touches);
+        setCursorVisible(false);
+      }
     },
     
     onPanResponderMove: (evt, gestureState) => {
-      const dragThreshold = 10;
+      const { touches } = evt.nativeEvent;
+      const state = gestureStateRef.current;
       
-      if (Math.abs(gestureState.dx) > dragThreshold || Math.abs(gestureState.dy) > dragThreshold) {
-        // Dragging to pan viewport
-        isDraggingRef.current = true;
+      if (touches.length === 2 && state.isZooming) {
+        // Handle zoom
+        const currentDistance = getDistance(touches);
+        const currentCenter = getCenter(touches);
         
-        const sensitivity = 0.02; // Adjust this to make dragging faster/slower
-        const newViewportX = lastPanRef.current.x - (gestureState.dx * viewportWidth * sensitivity);
-        const newViewportY = lastPanRef.current.y + (gestureState.dy * viewportHeight * sensitivity);
+        if (state.initialDistance > 0) {
+          const scaleChange = currentDistance / state.initialDistance;
+          let newScale = state.initialScale * scaleChange;
+          
+          // Constrain scale
+          newScale = Math.max(0.1, Math.min(newScale, 10));
+          
+          // Calculate new viewport dimensions
+          const newViewportWidth = state.initialViewport.width / newScale;
+          const newViewportHeight = state.initialViewport.height / newScale;
+          
+          // Calculate zoom center in graph coordinates
+          const zoomCenterGraph = screenToGraph(state.initialCenter.x, state.initialCenter.y);
+          
+          // Calculate new viewport position to keep zoom center fixed
+          const newViewportX = zoomCenterGraph.x - (zoomCenterGraph.x - state.initialViewport.x) * (newViewportWidth / state.initialViewport.width);
+          const newViewportY = zoomCenterGraph.y - (zoomCenterGraph.y - state.initialViewport.y) * (newViewportHeight / state.initialViewport.height);
+          
+          // Apply constraints to prevent zooming outside graph bounds
+          const constrainedX = Math.max(
+            graphData.globalMinX,
+            Math.min(newViewportX, graphData.globalMaxX - newViewportWidth)
+          );
+          const constrainedY = Math.max(
+            graphData.globalMinY,
+            Math.min(newViewportY, graphData.globalMaxY - newViewportHeight)
+          );
+          
+          setScale(newScale);
+          setViewportX(constrainedX);
+          setViewportY(constrainedY);
+          setViewportWidth(newViewportWidth);
+          setViewportHeight(newViewportHeight);
+        }
         
-        // Constrain viewport within graph bounds
+      } else if (touches.length === 1 && state.isPanning) {
+        // Handle pan
+        const sensitivity = 1;
+        const deltaX = gestureState.dx * sensitivity;
+        const deltaY = gestureState.dy * sensitivity;
+        
+        // Convert screen deltas to graph deltas
+        const graphDeltaX = -(deltaX / graphData.graphWidth) * viewportWidth;
+        const graphDeltaY = (deltaY / graphData.graphHeight) * viewportHeight;
+        
+        const newViewportX = state.lastPan.x + graphDeltaX;
+        const newViewportY = state.lastPan.y + graphDeltaY;
+        
+        // Apply constraints
         const constrainedX = Math.max(
           graphData.globalMinX,
           Math.min(newViewportX, graphData.globalMaxX - viewportWidth)
@@ -210,126 +371,123 @@ const Graph = ({ route }) => {
         
         setViewportX(constrainedX);
         setViewportY(constrainedY);
-      } else if (!isDraggingRef.current) {
-        // Update cursor position if not dragging
-        const touchX = evt.nativeEvent.locationX;
-        const touchY = evt.nativeEvent.locationY;
+        
+        // Update cursor position
+        const touchX = touches[0].locationX;
+        const touchY = touches[0].locationY;
         updateCursorPosition(touchX, touchY);
       }
     },
     
     onPanResponderRelease: () => {
-      if (!isDraggingRef.current) {
-        // Keep cursor visible for a moment if it was just a tap
-        setTimeout(() => {
-          setCursorVisible(false);
-        }, 2000);
-      } else {
-        setCursorVisible(false);
-      }
-      isDraggingRef.current = false;
+      const state = gestureStateRef.current;
+      state.isPanning = false;
+      state.isZooming = false;
+      
+      // Hide cursor after a delay
+      setTimeout(() => setCursorVisible(false), 3000);
     },
   });
 
-  // Update cursor position and calculate corresponding graph values
+  // Update cursor position and calculate actual graph value
   const updateCursorPosition = (touchX, touchY) => {
     if (!graphData) return;
-    
+
     setCursorX(touchX);
     setCursorY(touchY);
-    
-    // Convert screen coordinates to viewport coordinates
-    const viewportMinX = viewportX;
-    const viewportMinY = viewportY;
-    
-    const graphX = viewportMinX + (touchX / graphData.graphWidth) * viewportWidth;
-    const graphY = viewportMinY + ((graphData.graphHeight - touchY) / graphData.graphHeight) * viewportHeight;
-    
-    // Find the actual Y value on the curve for this X
-    const actualY = evaluateExpression(grapequation, graphX);
+
+    const graphCoords = screenToGraph(touchX, touchY);
+    const actualY = equationType === 'equation' 
+      ? solveImplicitEquation(grapequation, graphCoords.x) 
+      : evaluateExpression(grapequation, graphCoords.x);
     
     setCursorValue({ 
-      x: graphX, 
-      y: actualY !== null ? actualY : graphY 
+      x: graphCoords.x, 
+      y: actualY !== null ? actualY : graphCoords.y 
     });
   };
 
+  // Handle plot button
   const handlePlotGraph = () => {
     generateGraphData();
   };
 
+  // Reset view
   const handleReset = () => {
     setShowInputs(true);
     setGraphData(null);
-    setZoomLevel(1);
+    setScale(1);
     setViewportX(0);
     setViewportY(0);
+    setViewportWidth(20);
+    setViewportHeight(20);
     setCursorVisible(false);
+    setEquationType('function');
+    setProcessedEquation('');
+    gestureStateRef.current = {
+      isPanning: false,
+      isZooming: false,
+      initialDistance: 0,
+      initialScale: 1,
+      initialViewport: { x: 0, y: 0, width: 20, height: 20 },
+      lastPan: { x: 0, y: 0 },
+      initialCenter: { x: 0, y: 0 },
+    };
   };
 
-  const handleZoomIn = () => {
-    const newWidth = viewportWidth * 0.7;
-    const newHeight = viewportHeight * 0.7;
-    
-    // Keep viewport centered
-    setViewportX(prev => prev + (viewportWidth - newWidth) / 2);
-    setViewportY(prev => prev + (viewportHeight - newHeight) / 2);
-    setViewportWidth(newWidth);
-    setViewportHeight(newHeight);
-  };
-
-  const handleZoomOut = () => {
-    if (!graphData) return;
-    
-    const newWidth = Math.min(viewportWidth * 1.4, graphData.globalMaxX - graphData.globalMinX);
-    const newHeight = Math.min(viewportHeight * 1.4, graphData.globalMaxY - graphData.globalMinY);
-    
-    // Keep viewport centered and within bounds
-    let newX = viewportX - (newWidth - viewportWidth) / 2;
-    let newY = viewportY - (newHeight - viewportHeight) / 2;
-    
-    newX = Math.max(graphData.globalMinX, Math.min(newX, graphData.globalMaxX - newWidth));
-    newY = Math.max(graphData.globalMinY, Math.min(newY, graphData.globalMaxY - newHeight));
-    
-    setViewportX(newX);
-    setViewportY(newY);
-    setViewportWidth(newWidth);
-    setViewportHeight(newHeight);
-  };
-
-  const resetView = () => {
-    if (!graphData) return;
-    
-    const initialViewportWidth = Math.min(15, (graphData.globalMaxX - graphData.globalMinX) / 2);
-    const initialViewportHeight = Math.min(15, (graphData.globalMaxY - graphData.globalMinY) / 2);
-    
-    setViewportX(graphData.globalMinX);
-    setViewportY(graphData.globalMinY + (graphData.globalMaxY - graphData.globalMinY) / 2 - initialViewportHeight / 2);
-    setViewportWidth(initialViewportWidth);
-    setViewportHeight(initialViewportHeight);
-  };
-
-  // Create SVG path from visible points
+  // Create SVG path with improved discontinuity handling
   const createPath = () => {
     const points = getViewportPoints();
     if (!points || points.length === 0) return '';
-    
-    let path = `M ${points[0].screenX} ${points[0].screenY}`;
-    for (let i = 1; i < points.length; i++) {
-      path += ` L ${points[i].screenX} ${points[i].screenY}`;
+
+    let pathSegments = [];
+    let currentSegment = [];
+    const maxJumpThreshold = graphData.graphHeight * 0.3; // 30% of graph height
+
+    for (let i = 0; i < points.length; i++) {
+      const point = points[i];
+      
+      if (i === 0) {
+        currentSegment.push(point);
+      } else {
+        const prevPoint = points[i - 1];
+        const screenYDiff = Math.abs(point.screenY - prevPoint.screenY);
+        
+        if (screenYDiff > maxJumpThreshold) {
+          // Large jump detected - end current segment and start new one
+          if (currentSegment.length > 1) {
+            pathSegments.push([...currentSegment]);
+          }
+          currentSegment = [point];
+        } else {
+          currentSegment.push(point);
+        }
+      }
     }
-    return path;
+    
+    // Add the last segment
+    if (currentSegment.length > 1) {
+      pathSegments.push(currentSegment);
+    }
+
+    // Create path from segments
+    return pathSegments.map(segment => {
+      let path = `M ${segment[0].screenX} ${segment[0].screenY}`;
+      for (let i = 1; i < segment.length; i++) {
+        path += ` L ${segment[i].screenX} ${segment[i].screenY}`;
+      }
+      return path;
+    }).join(' ');
   };
 
-  // Generate grid lines for current viewport
+  // Generate adaptive grid lines
   const generateGridLines = () => {
     if (!graphData) return [];
-    
+
     const lines = [];
     const { graphWidth, graphHeight } = graphData;
-    
+
     // Vertical grid lines
-    const xStep = viewportWidth / 10;
     for (let i = 0; i <= 10; i++) {
       const x = (i / 10) * graphWidth;
       lines.push(
@@ -344,11 +502,10 @@ const Graph = ({ route }) => {
         />
       );
     }
-    
+
     // Horizontal grid lines
-    const yStep = viewportHeight / 8;
-    for (let i = 0; i <= 8; i++) {
-      const y = (i / 8) * graphHeight;
+    for (let i = 0; i <= 10; i++) {
+      const y = (i / 10) * graphHeight;
       lines.push(
         <Line
           key={`h-${i}`}
@@ -361,17 +518,17 @@ const Graph = ({ route }) => {
         />
       );
     }
-    
+
     return lines;
   };
 
-  // Generate axis labels for current viewport
+  // Generate adaptive axis labels
   const generateLabels = () => {
     if (!graphData) return [];
-    
+
     const labels = [];
     const { graphWidth, graphHeight } = graphData;
-    
+
     // X-axis labels
     for (let i = 0; i <= 10; i++) {
       const x = (i / 10) * graphWidth;
@@ -385,15 +542,15 @@ const Graph = ({ route }) => {
           fill="#666"
           textAnchor="middle"
         >
-          {value.toFixed(1)}
+          {value.toFixed(viewportWidth > 100 ? 0 : viewportWidth > 10 ? 1 : 2)}
         </SvgText>
       );
     }
-    
+
     // Y-axis labels
-    for (let i = 0; i <= 8; i++) {
-      const y = graphHeight - (i / 8) * graphHeight;
-      const value = viewportY + (i / 8) * viewportHeight;
+    for (let i = 0; i <= 10; i++) {
+      const y = graphHeight - (i / 10) * graphHeight;
+      const value = viewportY + (i / 10) * viewportHeight;
       labels.push(
         <SvgText
           key={`y-label-${i}`}
@@ -403,11 +560,11 @@ const Graph = ({ route }) => {
           fill="#666"
           textAnchor="start"
         >
-          {value.toFixed(1)}
+          {value.toFixed(viewportHeight > 100 ? 0 : viewportHeight > 10 ? 1 : 2)}
         </SvgText>
       );
     }
-    
+
     return labels;
   };
 
@@ -415,15 +572,16 @@ const Graph = ({ route }) => {
     return (
       <View style={styles.container}>
         <View style={styles.inputContainer}>
-          <Text style={styles.title}>Interactive Graph Plotter</Text>
-          
+          <Text style={styles.title}>Graph Plotter</Text>
           <View style={styles.equationContainer}>
             <Text style={styles.label}>Equation: {grapequation}</Text>
             <Text style={styles.hint}>
-              Supports: sin(X), cos(X), tan(X), X², sqrt(X), log(X), etc.
+              Supports: sin(x), cos(x), tan(x), tan⁻¹(x), sinh(x), cosh(x), log(x), equations like tan⁻¹(20)+2X-1=50
             </Text>
+            {processedEquation && (
+              <Text style={styles.processedEquation}>Processed: {processedEquation}</Text>
+            )}
           </View>
-
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Start Value (X-axis)</Text>
             <TextInput
@@ -434,7 +592,6 @@ const Graph = ({ route }) => {
               keyboardType="numeric"
             />
           </View>
-
           <View style={styles.inputGroup}>
             <Text style={styles.label}>End Value (X-axis)</Text>
             <TextInput
@@ -445,9 +602,8 @@ const Graph = ({ route }) => {
               keyboardType="numeric"
             />
           </View>
-
           <TouchableOpacity style={styles.plotButton} onPress={handlePlotGraph}>
-            <Text style={styles.plotButtonText}>Plot Interactive Graph</Text>
+            <Text style={styles.plotButtonText}>Plot Graph</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -457,7 +613,9 @@ const Graph = ({ route }) => {
   return (
     <View style={styles.container}>
       <View style={styles.graphHeader}>
-        <Text style={styles.graphTitle}>Interactive Graph: {grapequation}</Text>
+        <Text style={styles.graphTitle}>
+          {equationType === 'equation' ? 'Equation' : 'Function'}: {grapequation}
+        </Text>
         <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
           <Text style={styles.resetButtonText}>New Graph</Text>
         </TouchableOpacity>
@@ -465,11 +623,14 @@ const Graph = ({ route }) => {
       
       <View style={styles.infoContainer}>
         <Text style={styles.rangeText}>
-          Full Range: {startValue} to {endValue}
+          Range: {startValue} to {endValue} | Type: {equationType}
         </Text>
         <Text style={styles.viewportText}>
-          Viewport: X: {viewportX.toFixed(1)} to {(viewportX + viewportWidth).toFixed(1)} | 
-          Y: {viewportY.toFixed(1)} to {(viewportY + viewportHeight).toFixed(1)}
+          Viewport: X: {viewportX.toFixed(2)} to {(viewportX + viewportWidth).toFixed(2)} | 
+          Y: {viewportY.toFixed(2)} to {(viewportY + viewportHeight).toFixed(2)}
+        </Text>
+        <Text style={styles.zoomText}>
+          Zoom: {scale.toFixed(2)}x
         </Text>
         {cursorVisible && (
           <Text style={styles.cursorText}>
@@ -477,30 +638,14 @@ const Graph = ({ route }) => {
           </Text>
         )}
       </View>
-
-      <View style={styles.controlsContainer}>
-        <TouchableOpacity style={styles.controlButton} onPress={handleZoomIn}>
-          <Text style={styles.controlButtonText}>Zoom In</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.controlButton} onPress={handleZoomOut}>
-          <Text style={styles.controlButtonText}>Zoom Out</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.controlButton} onPress={resetView}>
-          <Text style={styles.controlButtonText}>Reset View</Text>
-        </TouchableOpacity>
-      </View>
-
+      
       <View style={styles.graphContainer} {...panResponder.panHandlers}>
         {graphData && (
-          <Svg
-            width={graphData.graphWidth}
-            height={graphData.graphHeight}
-            style={styles.svg}
-          >
+          <Svg width={graphData.graphWidth} height={graphData.graphHeight} style={styles.svg}>
             {/* Grid */}
             {generateGridLines()}
             
-            {/* Main axes */}
+            {/* Axes */}
             <Line
               x1={0}
               y1={graphData.graphHeight / 2}
@@ -521,13 +666,8 @@ const Graph = ({ route }) => {
             {/* Labels */}
             {generateLabels()}
             
-            {/* Graph curve */}
-            <Path
-              d={createPath()}
-              stroke="#ff0000"
-              strokeWidth="2"
-              fill="none"
-            />
+            {/* Function curve */}
+            <Path d={createPath()} stroke="#ff0000" strokeWidth="2" fill="none" />
             
             {/* Cursor */}
             {cursorVisible && (
@@ -550,33 +690,26 @@ const Graph = ({ route }) => {
                   strokeWidth="1"
                   strokeDasharray="5,5"
                 />
-                <Circle
-                  cx={cursorX}
-                  cy={cursorY}
-                  r="4"
-                  fill="#00ff00"
-                  stroke="#ffffff"
-                  strokeWidth="2"
+                <Circle 
+                  cx={cursorX} 
+                  cy={cursorY} 
+                  r="4" 
+                  fill="#00ff00" 
+                  stroke="#ffffff" 
+                  strokeWidth="2" 
                 />
               </G>
             )}
           </Svg>
         )}
       </View>
-
+      
       <View style={styles.instructionsContainer}>
-        <Text style={styles.instructionsText}>
-          • Drag to pan through different sections of the graph
-        </Text>
-        <Text style={styles.instructionsText}>
-          • Tap to show cursor and values at any point
-        </Text>
-        <Text style={styles.instructionsText}>
-          • Use zoom buttons to see more/fewer details
-        </Text>
-        <Text style={styles.instructionsText}>
-          • Viewport shows only 10-15 units at a time for better detail
-        </Text>
+        <Text style={styles.instructionsTitle}>Controls:</Text>
+        <Text style={styles.instructionsText}>• Single finger: Drag to pan, tap to show cursor</Text>
+        <Text style={styles.instructionsText}>• Two fingers: Pinch to zoom in/out</Text>
+        <Text style={styles.instructionsText}>• Supports: sin(x), cos(x), tan(x), tan⁻¹(x), sinh(x), cosh(x)</Text>
+        <Text style={styles.instructionsText}>• Equations: e.g., tan⁻¹(20)+2X-1=50</Text>
       </View>
     </View>
   );
@@ -620,6 +753,15 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     fontStyle: 'italic',
+    marginBottom: 5,
+  },
+  processedEquation: {
+    fontSize: 11,
+    color: '#007AFF',
+    fontFamily: 'monospace',
+    backgroundColor: '#f8f8f8',
+    padding: 5,
+    borderRadius: 4,
   },
   inputGroup: {
     marginBottom: 20,
@@ -653,7 +795,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   graphTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
     color: '#333',
     flex: 1,
@@ -679,35 +821,22 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   viewportText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#333',
     fontWeight: '600',
     marginTop: 2,
   },
+  zoomText: {
+    fontSize: 12,
+    color: '#007AFF',
+    fontWeight: '600',
+    marginTop: 2,
+  },
   cursorText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#00aa00',
     fontWeight: '600',
     marginTop: 4,
-  },
-  controlsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    backgroundColor: '#fff',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  controlButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 6,
-  },
-  controlButtonText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
   },
   graphContainer: {
     flex: 1,
@@ -729,6 +858,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 15,
     marginTop: 10,
+  },
+  instructionsTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
   },
   instructionsText: {
     fontSize: 12,

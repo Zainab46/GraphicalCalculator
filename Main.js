@@ -4,8 +4,8 @@ import { factorial , PI,E,abs,sqrt, div_mul, divide, cbrt, square, cube, x_yrt,
   makeNegative, computeLog10, computeLn,computeLogBase, 
   computeSummation,taylorSin,taylorTan,taylorCos,taylorAsin,taylorAcos,taylorAtan,
 taylorSinh,taylorCosh,taylorTanh,taylorAsinh,taylorAcosh,taylorAtanh,initDB,insertRecord,computeIntegration,computeDerivative,
-Rand,advancedIntegration,symbolicDerivative,tenPower,RanSharp,RanInt,config,getCalculatedValue,performOperation} from "./Screens/AllLogics";
-import { computeArg,computecongj,compute_abi,computePolar,parseComplex,computeRectangular } from "./Screens/ComplexModeLogics";
+Rand,advancedIntegration,symbolicDerivative,tenPower,RanSharp,RanInt,config,getCalculatedValue,performOperation,numericalIntegration,numericalDerivative} from "./Screens/AllLogics";
+import { computeArg,computecongj,compute_abi,computePolar,parseComplex,computeRectangular,polarToRectangularangle,convertDMS } from "./Screens/ComplexModeLogics";
 
 
 
@@ -409,11 +409,15 @@ const HandleVariables=(variable)=>{
       setExpressionInput(expressionInput.substring(0, currentPos) + '-' + expressionInput.substring(currentPos));
     setCursorPosition(currentPos + 1);
    }
+   else if(shift===false && variable==='=' && alpha===true){
+      setExpressionInput(expressionInput.substring(0, currentPos) + '=' + expressionInput.substring(currentPos));
+    setCursorPosition(currentPos + 1);
+   }
    else if(shift===false && variable==='a' && alpha===true ){
       setExpressionInput(expressionInput.substring(0, currentPos) + 'A' + expressionInput.substring(currentPos));
     setCursorPosition(currentPos + 1);
    }
-   else if(  variable==='b' && alpha===false){
+   else if(  variable==='b' && alpha===false && ActualMode==='CMPLX' ){
       setExpressionInput(expressionInput.substring(0, currentPos) + '°' + expressionInput.substring(currentPos));
     setCursorPosition(currentPos + 1);
    }
@@ -422,7 +426,7 @@ const HandleVariables=(variable)=>{
     setCursorPosition(currentPos + 1);
    }
     else if(  shift===true&& variable==='c' && alpha===false){
-      setExpressionInput(expressionInput.substring(0, currentPos) + ' |□|' + expressionInput.substring(currentPos));
+      setExpressionInput(expressionInput.substring(0, currentPos) + '|□|' + expressionInput.substring(currentPos));
     setCursorPosition(currentPos + 1);
    }
    else if( shift===false&& variable==='c' && alpha===true){
@@ -619,7 +623,7 @@ else if(eqvalues!=null){
      let num=config.count
      num=config.count+1
      console.log(num)
-    if (num==1){
+    if (num===1){
       
       console.log('pehla count')
 
@@ -759,6 +763,13 @@ const handle_integration_and_derivation = () => {
 
 
 const HandleClear=()=>{
+  config.count=0
+  config.A=''
+  config.B=''
+  config.C=''
+  config.D=''
+  config.F=''
+  config.expression=''
   setExpressionInput('');
   setResult('');
 }
@@ -933,6 +944,36 @@ const handleRand = () => {
     if (shift===true && expressionInput===''){
       navigation.navigate('History')
     }
+
+     else if (expressionInput.includes('°')){
+      let number=config.count+1
+      config.count=number
+      console.log(number)
+      if(number==1){
+      const res=convertDMS(expressionInput)
+    console.log('result 1st= '+res)
+    setResult(res.toString())
+    config.ANS=res
+    insertRecord(expressionInput,res)
+    number=config.count+1
+    config.count=number
+      }
+      else if(number>1){
+       const res=convertDMS(result.toString())
+    console.log('result 2nd= '+res)
+    setResult(res.toString())
+    config.ANS=res
+    insertRecord(expressionInput,res)
+      }
+    
+    }
+    else if (expressionInput.includes('∠')){
+    const res=polarToRectangularangle(expressionInput)
+    console.log('result= '+res)
+    setResult(res.toString())
+    config.ANS=res
+    insertRecord(expressionInput,res)
+    }
     else if (vecresults) {
       setResult(vecresults);
       config.ANS=vecresults
@@ -944,7 +985,18 @@ const handleRand = () => {
       setvectors(null);
     }
 
-    else if (expressionInput.includes('A')||expressionInput.includes('B')||expressionInput.includes('C')||expressionInput.includes('D')){
+    else if (baseresults) {
+      setResult(baseresults);
+      config.ANS=baseresults
+      insertRecord(bases,baseresults)
+      console.log(baseresults);
+
+      // Clear
+      setbaseresults(null);
+      setbases(null);
+    }
+
+    else if (expressionInput.includes('A')||expressionInput.includes('B')||expressionInput.includes('C')||expressionInput.includes('D')||expressionInput.includes('E')||expressionInput.includes('F')){
       console.log(expressionInput)
       const abcd=performOperation(expressionInput);
       console.log('abcd wala=' +abcd)
@@ -961,19 +1013,6 @@ const handleRand = () => {
       seteqvalues(null);
       seteqvaluesresult(null);
     }
-
-    
-    else if (baseresults) {
-      setResult(baseresults);
-      config.ANS=baseresults
-      insertRecord(bases,baseresults)
-      console.log(baseresults);
-
-      // Clear
-      setbaseresults(null);
-      setbases(null);
-    }
-
     
     else if (answers) {
       setResult(answers);
@@ -986,7 +1025,7 @@ const handleRand = () => {
       setanswers(null);
     }
 
-     else if (config.ANS!==''&& config.count!=='0') {
+     else if (config.expression!==''&& config.count!=='0') {
       
         
         console.log('asnwer='+ config.ANS)
@@ -1006,7 +1045,29 @@ const handleRand = () => {
       config.ANS=answer
       config.expression=""
     }
-    
+    else if (expressionInput.includes('∫')) {
+      console.log('integral')
+  const result = numericalIntegration(expressionInput.toString());
+
+  setResult(result.toString());
+  console.log('ya hai last result '+result.toString())
+  setLastResult(result.toString());
+  config.ANS=result
+  insertRecord(expressionInput, result);
+  
+}
+
+else if (expressionInput.includes('d/dx')) {
+      console.log('integral')
+  const result = numericalDerivative(expressionInput.toString());
+
+  setResult(result.toString());
+  console.log('ya hai last result '+result.toString())
+  setLastResult(result.toString());
+  config.ANS=result
+  insertRecord(expressionInput, result);
+  
+}
 
     // Normal equation evaluation
     else if (expressionInput) {
@@ -1147,7 +1208,7 @@ return (
       <View style={{flexDirection:'row',marginTop:8}}>
         <View>
           <Text style={{color:'white', marginLeft:15}}>solve=</Text>
-          <TouchableOpacity style={{alignItems:'center',marginLeft:10,backgroundColor:'#D9D9D9', borderRadius:10,height:25,width:50}}>
+          <TouchableOpacity style={{alignItems:'center',marginLeft:10,backgroundColor:'#D9D9D9', borderRadius:10,height:25,width:50}} onPress={()=>HandleVariables('=')}>
             <Text style={{fontWeight:'bold',marginTop:2}}>CALC</Text>
           </TouchableOpacity>
         </View>

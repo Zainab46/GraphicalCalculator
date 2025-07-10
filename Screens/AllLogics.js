@@ -11,11 +11,13 @@ export const config = {
   mode: "DEG",
   ANS: "",
   expression:"",
-  count:'0',
+  count:0,
   A:'0',
   B:'0',
   C:'0',
-  D:'0'
+  D:'0',
+  E:'0',
+  F:'0',
 };
 
 // Helper function to convert input to radians based on current mode
@@ -1270,7 +1272,7 @@ export {
 };
 
 /**
- * Performs mathematical operations on config variables A, B, C, D
+ * Performs mathematical operations on config variables A, B, C, D, E, F
  * @param {string} operation - Operation string (e.g., "A=20", "AX20", "A+B", "A-10")
  * @returns {string|number} - Result of the operation or updated variable value
  */
@@ -1279,7 +1281,7 @@ export function performOperation(operation) {
   const cleanOp = operation.replace(/\s+/g, '').toUpperCase();
   
   // Valid variables
-  const validVars = ['A', 'B', 'C', 'D'];
+  const validVars = ['A', 'B', 'C', 'D', 'E', 'F'];
   
   // Assignment operation (=)
   if (cleanOp.includes('=')) {
@@ -1299,7 +1301,7 @@ export function performOperation(operation) {
   }
   
   // Parse operation with operators
-  const operatorRegex = /([ABCD])([\+\-\*\/X])(\d+(?:\.\d+)?|[ABCD])/;
+  const operatorRegex = /([ABCDEF])([\+\-\*\/X])(\d+(?:\.\d+)?|[ABCDEF])/;
   const match = cleanOp.match(operatorRegex);
   
   if (match) {
@@ -1348,7 +1350,7 @@ export function performOperation(operation) {
   }
   
   // Complex expression evaluation (e.g., "A+B*C")
-  const complexExpressionRegex = /^[ABCD\+\-\*\/X\(\)\d\.\s]+$/;
+  const complexExpressionRegex = /^[ABCDEF\+\-\*\/X\(\)\d\.\s]+$/;
   if (complexExpressionRegex.test(cleanOp)) {
     let expression = cleanOp;
     
@@ -1376,4 +1378,194 @@ export function performOperation(operation) {
   }
   
   throw new Error(`Invalid operation: ${operation}`);
+}
+export function numericalIntegration(integralString) {
+  const isDegreeMode = true; // Set to false for radians
+
+  const cleanInput = integralString.replace(/\s+/g, '').trim();
+  const integralRegex = /^∫\((-?\d*\.?\d*),(-?\d*\.?\d*),f\((.+)\),dx\)$/;
+  const match = cleanInput.match(integralRegex);
+
+  if (!match) {
+    throw new Error(
+      `Invalid format. Expected: ∫(a,b,f(x),dx), e.g. ∫(1,5,f(2X+1),dx)`
+    );
+  }
+
+  const a = parseFloat(match[1]);
+  const b = parseFloat(match[2]);
+  const fx = match[3];
+
+  if (isNaN(a) || isNaN(b) || a >= b) {
+    throw new Error(`Invalid integration limits: a=${a}, b=${b}`);
+  }
+
+  let expression = fx
+    .replace(/X/g, 'x')
+    .replace(/\^/g, '**');
+
+  // Degree-safe trig replacements
+  if (isDegreeMode) {
+    expression = expression
+      .replace(/(?<!arc|Math\.)sin\(/g, 'dsin(')
+      .replace(/(?<!arc|Math\.)cos\(/g, 'dcos(')
+      .replace(/(?<!arc|Math\.)tan\(/g, 'dtan(');
+  }
+
+  // Trigonometric and inverse functions
+  expression = expression
+    .replace(/arcsin/g, 'Math.asin')
+    .replace(/sin⁻¹/g, 'Math.asin')
+    .replace(/arccos/g, 'Math.acos')
+    .replace(/cos⁻¹/g, 'Math.acos')
+    .replace(/arctan/g, 'Math.atan')
+    .replace(/tan⁻¹/g, 'Math.atan')
+
+    // Hyperbolic functions
+    .replace(/sinh/g, 'Math.sinh')
+    .replace(/cosh/g, 'Math.cosh')
+    .replace(/tanh/g, 'Math.tanh')
+
+    // Inverse hyperbolic
+    .replace(/arsinh/g, 'Math.asinh')
+    .replace(/arcosh/g, 'Math.acosh')
+    .replace(/artanh/g, 'Math.atanh')
+
+    // Misc math functions
+    .replace(/sqrt/g, 'Math.sqrt')
+    .replace(/log10/g, 'Math.log10')
+    .replace(/log/g, 'Math.log10')
+    .replace(/ln/g, 'Math.log')
+    .replace(/exp/g, 'Math.exp')
+    .replace(/abs/g, 'Math.abs')
+    .replace(/pow/g, 'Math.pow');
+
+  const n = 1000;
+  const h = (b - a) / n;
+  let sum = 0;
+
+  const evaluateFx = (x) => {
+    const deg = (v) => v * Math.PI / 180;
+
+    const degreeWrappers = {
+      dsin: (v) => Math.sin(deg(v)),
+      dcos: (v) => Math.cos(deg(v)),
+      dtan: (v) => Math.tan(deg(v)),
+    };
+
+    try {
+      const func = new Function('x', 'Math', 'dsin', 'dcos', 'dtan', `"use strict"; return (${expression});`);
+      const result = func(x, Math, degreeWrappers.dsin, degreeWrappers.dcos, degreeWrappers.dtan);
+      if (isNaN(result) || !isFinite(result)) {
+        throw new Error(`Function is undefined at x=${x}`);
+      }
+      return result;
+    } catch (err) {
+      throw new Error(`Evaluation failed for expression "${fx}". Error: ${err.message}`);
+    }
+  };
+
+  try {
+    sum += evaluateFx(a);
+    for (let i = 1; i < n; i++) {
+      const x = a + i * h;
+      const coeff = i % 2 === 0 ? 2 : 4;
+      sum += coeff * evaluateFx(x);
+    }
+    sum += evaluateFx(b);
+  } catch (err) {
+    throw new Error(`Error during integration: ${err.message}`);
+  }
+
+  const result = (h / 3) * sum;
+  return parseFloat(result.toFixed(6));
+}
+
+/**
+ * Computes the numerical derivative d/dx(f(...), x0)
+ * @param {string} derivativeString - Input like d/dx(f(expression), x0)
+ * @returns {number} - Approximate value of the derivative
+ */
+export function numericalDerivative(derivativeString) {
+  const isDegreeMode = true;
+
+  // Clean and match the pattern
+  const cleanInput = derivativeString.replace(/\s+/g, '').trim();
+  const derivativeRegex = /^d\/dx\(f\((.+)\),(-?\d*\.?\d*)\)$/;
+  const match = cleanInput.match(derivativeRegex);
+
+  if (!match) {
+    throw new Error(
+      `Invalid format. Expected: d/dx(f(expression), x0), e.g. d/dx(f(X^2+3),2)`
+    );
+  }
+
+  let fx = match[1];
+  const x0 = parseFloat(match[2]);
+
+  if (isNaN(x0)) {
+    throw new Error(`Invalid point x0: ${match[2]}`);
+  }
+
+  // Standardize expression: replace X with x, ^ with **, and math functions
+  fx = fx.replace(/X/g, 'x').replace(/\^/g, '**');
+
+  // Degree-safe trig
+  if (isDegreeMode) {
+    fx = fx
+      .replace(/(?<!arc|Math\.)sin\(/g, 'dsin(')
+      .replace(/(?<!arc|Math\.)cos\(/g, 'dcos(')
+      .replace(/(?<!arc|Math\.)tan\(/g, 'dtan(');
+  }
+
+  // Add full math function support
+  fx = fx
+    .replace(/arcsin/g, 'Math.asin')
+    .replace(/sin⁻¹/g, 'Math.asin')
+    .replace(/arccos/g, 'Math.acos')
+    .replace(/cos⁻¹/g, 'Math.acos')
+    .replace(/arctan/g, 'Math.atan')
+    .replace(/tan⁻¹/g, 'Math.atan')
+
+    .replace(/sinh/g, 'Math.sinh')
+    .replace(/cosh/g, 'Math.cosh')
+    .replace(/tanh/g, 'Math.tanh')
+
+    .replace(/arsinh/g, 'Math.asinh')
+    .replace(/arcosh/g, 'Math.acosh')
+    .replace(/artanh/g, 'Math.atanh')
+
+    .replace(/sqrt/g, 'Math.sqrt')
+    .replace(/log10/g, 'Math.log10')
+    .replace(/log/g, 'Math.log10')
+    .replace(/ln/g, 'Math.log')
+    .replace(/exp/g, 'Math.exp')
+    .replace(/abs/g, 'Math.abs')
+    .replace(/pow/g, 'Math.pow');
+
+  // Degree wrappers
+  const deg = (v) => v * Math.PI / 180;
+  const degreeWrappers = {
+    dsin: (v) => Math.sin(deg(v)),
+    dcos: (v) => Math.cos(deg(v)),
+    dtan: (v) => Math.tan(deg(v)),
+  };
+
+  const evaluateFx = (x) => {
+    try {
+      const func = new Function('x', 'Math', 'dsin', 'dcos', 'dtan', `"use strict"; return (${fx});`);
+      const result = func(x, Math, degreeWrappers.dsin, degreeWrappers.dcos, degreeWrappers.dtan);
+      if (isNaN(result) || !isFinite(result)) {
+        throw new Error(`Function is undefined at x=${x}`);
+      }
+      return result;
+    } catch (err) {
+      throw new Error(`Failed to evaluate expression "${fx}". Error: ${err.message}`);
+    }
+  };
+
+  // Numerical derivative using central difference
+  const h = 1e-5;
+  const derivative = (evaluateFx(x0 + h) - evaluateFx(x0 - h)) / (2 * h);
+  return parseFloat(derivative.toFixed(6));
 }

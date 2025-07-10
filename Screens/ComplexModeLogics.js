@@ -135,3 +135,93 @@ export function computeRectangular(r, thetaDegrees = 0) {
 
   return `${a.toFixed(4)}${b < 0 ? '-' : '+'}${Math.abs(b).toFixed(4)}i`;
 }
+
+/**
+ * Converts a complex number from polar form (e.g., "20∠5") to rectangular form (a + bi)
+ * @param {string} polarString - Complex number in polar form (e.g., "20∠5", "15.5∠30")
+ * @returns {string} - Rectangular form as a string (e.g., "19.92389396183+1.743114i")
+ */
+export function polarToRectangularangle(polarString) {
+  // Remove spaces and ensure consistent angle symbol
+  const cleanInput = polarString.replace(/\s+/g, '').replace(/∠/g, '∠').trim();
+  
+  // Regex to match magnitude∠angle (e.g., "20∠5", "15.5∠30")
+  const polarRegex = /^(\d*\.?\d*)∠(\d*\.?\d*)$/;
+  const match = cleanInput.match(polarRegex);
+  
+  if (!match) {
+    throw new Error(`Invalid polar form: ${polarString}. Expected format: r∠θ (e.g., 20∠5)`);
+  }
+  
+  const magnitude = parseFloat(match[1]);
+  const angleDegrees = parseFloat(match[2]);
+  
+  // Validate inputs
+  if (isNaN(magnitude) || isNaN(angleDegrees)) {
+    throw new Error(`Invalid magnitude or angle: ${match[1]}∠${match[2]}`);
+  }
+  
+  // Convert angle to radians
+  const angleRadians = angleDegrees * Math.PI / 180;
+  
+  // Calculate real and imaginary parts
+  const realPart = magnitude * Math.cos(angleRadians);
+  const imagPart = magnitude * Math.sin(angleRadians);
+  
+  // Format the result as "a+bi" or "a-bi"
+  const sign = imagPart >= 0 ? '+' : '';
+  return `${realPart.toFixed(11)}${sign}${imagPart.toFixed(6)}i`;
+}
+
+
+/**
+ * Converts between decimal degrees and DMS (Degrees, Minutes, Seconds) formats
+ * @param {string} input - Input string in decimal degrees (e.g., "10°", "2.55°") or DMS (e.g., "10°30'45\"")
+ * @returns {string} - Converted result (DMS if input is decimal, decimal if input is DMS)
+ */
+export function convertDMS(input) {
+  // Remove spaces and standardize symbols
+  const cleanInput = input.replace(/\s+/g, '').trim();
+  
+  // Regex for decimal degrees (e.g., "10°", "2.55°")
+  const decimalRegex = /^(\d*\.?\d*)°$/;
+  // Regex for DMS (e.g., "10°30'45"", "10°30'", "10°")
+  const dmsRegex = /^(\d*)°(?:(\d*)'(?:(\d*\.?\d*)"))?$/;
+  
+  // Check if input is decimal degrees
+  if (decimalRegex.test(cleanInput)) {
+    const decimalDegrees = parseFloat(cleanInput.replace('°', ''));
+    if (isNaN(decimalDegrees)) {
+      throw new Error(`Invalid decimal degrees: ${input}`);
+    }
+    
+    // Convert decimal degrees to DMS
+    const degrees = Math.floor(decimalDegrees);
+    const minutesDecimal = (decimalDegrees - degrees) * 60;
+    const minutes = Math.floor(minutesDecimal);
+    const seconds = (minutesDecimal - minutes) * 60;
+    
+    // Format DMS output
+    return `${degrees}°${minutes}'${seconds.toFixed(2)}"`;
+  }
+  
+  // Check if input is DMS
+  if (dmsRegex.test(cleanInput)) {
+    const match = cleanInput.match(dmsRegex);
+    const degrees = parseFloat(match[1]) || 0;
+    const minutes = parseFloat(match[2]) || 0;
+    const seconds = parseFloat(match[3]) || 0;
+    
+    if (isNaN(degrees) || isNaN(minutes) || isNaN(seconds)) {
+      throw new Error(`Invalid DMS format: ${input}`);
+    }
+    
+    // Convert DMS to decimal degrees
+    const decimalDegrees = degrees + (minutes / 60) + (seconds / 3600);
+    
+    // Format decimal output
+    return `${decimalDegrees.toFixed(4)}°`;
+  }
+  
+  throw new Error(`Invalid input format: ${input}. Expected formats: "10°", "2.55°", or "10°30'45\""`);
+}
