@@ -1205,6 +1205,10 @@ return (
           <TouchableOpacity style={ss.modebtn} onPress={ShiftAlphaHandling}>
             <Text style={ss.modetxt}>{SA}</Text> 
           </TouchableOpacity>
+
+          <TouchableOpacity style={ss.modebtn} onPress={()=>{appendinlistofgraph()}}>
+            <Text style={ss.modetxt}>G List</Text> 
+          </TouchableOpacity>
         </View>
         <View>
           <TouchableOpacity style={ss.graphbtn} onPress={()=>{handlegraph()}}>
@@ -1272,7 +1276,7 @@ return (
 
         <View>
           <Text></Text>
-          <TouchableOpacity style={{alignItems:'center',marginLeft:10,backgroundColor:'#D9D9D9', borderRadius:10,height:25,width:50}} onPress={()=>{appendinlistofgraph()}}>
+          <TouchableOpacity style={{alignItems:'center',marginLeft:10,backgroundColor:'#D9D9D9', borderRadius:10,height:25,width:50}}>
             <Image source={require('./Assets/downArrow.png')} style={{height:15,width:15,marginTop:4}}></Image> 
           </TouchableOpacity>
         </View>
