@@ -1134,6 +1134,8 @@ const handlegraph=()=>{
 
 const appendinlistofgraph=()=>{
   config.graph.push(expressionInput.toString())
+  setExpressionInput('')
+  setResult('added in graph list')
   console.log('graph wali list '+config.graph)
 }
 
