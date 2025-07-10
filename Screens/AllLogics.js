@@ -550,7 +550,14 @@ export const initDB = async () => {
       );`
     );
 
-    await checkTimestampColumn(); // 🔁 Add timestamp column if missing
+    await db.executeSql(
+      `CREATE TABLE IF NOT EXISTS favourites (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        expression TEXT NOT NULL
+      );`
+    );
+
+    await checkTimestampColumn(); // Optional: adds timestamp if needed
 
     return db;
   } catch (error) {
@@ -624,6 +631,67 @@ export const insertRecord = async (expression, result) => {
   }
 };
 
+//for fvrt records
+
+export const insertFavourite = async (expression) => {
+  try {
+    if (!db) {
+      db = await SQLite.openDatabase({ name: DB_NAME, location: 'default' });
+    }
+
+    if (!expression) {
+      console.warn('Empty expression cannot be added.');
+      return;
+    }
+
+    // Check if already exists
+    const existing = await db.executeSql(
+      'SELECT id FROM favourites WHERE expression = ?',
+      [expression]
+    );
+
+    if (existing[0].rows.length > 0) {
+      console.log('Expression already exists in favourites.');
+      return;
+    }
+
+    // Count current favourites
+    const countResult = await db.executeSql('SELECT COUNT(*) AS count FROM favourites');
+    const count = countResult[0].rows.item(0).count;
+
+    // If 15 or more, delete the oldest one
+    if (count >= 15) {
+      const oldest = await db.executeSql('SELECT id FROM favourites ORDER BY id ASC LIMIT 1');
+      const oldestId = oldest[0].rows.item(0).id;
+
+      await db.executeSql('DELETE FROM favourites WHERE id = ?', [oldestId]);
+    }
+
+    // Insert new expression
+    await db.executeSql(
+      'INSERT INTO favourites (expression) VALUES (?)',
+      [expression]
+    );
+
+    console.log('Expression added to favourites:', expression);
+  } catch (error) {
+    console.error('Error inserting into favourites:', error);
+  }
+};
+
+export const deleteAllFavourites = async () => {
+  try {
+    if (!db) {
+      db = await SQLite.openDatabase({ name: DB_NAME, location: 'default' });
+    }
+
+    await db.executeSql('DELETE FROM favourites');
+    console.log('All favourites deleted.');
+  } catch (error) {
+    console.error('Delete all favourites error:', error);
+  }
+};
+
 export const fetchRecords = async () => {
   try {
     if (!db) {
@@ -639,6 +707,27 @@ export const fetchRecords = async () => {
     return data;
   } catch (error) {
     console.error('Fetch error:', error);
+    return [];
+  }
+};
+
+export const fetchFavourites = async () => {
+  try {
+    if (!db) {
+      db = await SQLite.openDatabase({ name: DB_NAME, location: 'default' });
+    }
+
+    const results = await db.executeSql('SELECT * FROM favourites ORDER BY id ASC');
+    const rows = results[0].rows;
+    let data = [];
+
+    for (let i = 0; i < rows.length; i++) {
+      data.push(rows.item(i));
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Fetch favourites error:', error);
     return [];
   }
 };
@@ -664,6 +753,19 @@ export const deleteAllRecords = async () => {
     await db.executeSql('DELETE FROM records');
   } catch (error) {
     console.error('Delete all error:', error);
+  }
+};
+
+export const deleteFavouriteById = async (id) => {
+  try {
+    if (!db) {
+      db = await SQLite.openDatabase({ name: DB_NAME, location: 'default' });
+    }
+
+    await db.executeSql('DELETE FROM favourites WHERE id = ?', [id]);
+    console.log(`Favourite with id ${id} deleted.`);
+  } catch (error) {
+    console.error('Delete favourite by ID error:', error);
   }
 };
 

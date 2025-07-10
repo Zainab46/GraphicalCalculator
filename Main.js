@@ -4,7 +4,7 @@ import { factorial , PI,E,abs,sqrt, div_mul, divide, cbrt, square, cube, x_yrt,
   makeNegative, computeLog10, computeLn,computeLogBase, 
   computeSummation,taylorSin,taylorTan,taylorCos,taylorAsin,taylorAcos,taylorAtan,
 taylorSinh,taylorCosh,taylorTanh,taylorAsinh,taylorAcosh,taylorAtanh,initDB,insertRecord,computeIntegration,computeDerivative,
-Rand,advancedIntegration,symbolicDerivative,tenPower,RanSharp,RanInt,config,getCalculatedValue,performOperation,numericalIntegration,numericalDerivative} from "./Screens/AllLogics";
+Rand,advancedIntegration,symbolicDerivative,tenPower,RanSharp,RanInt,config,getCalculatedValue,performOperation,numericalIntegration,numericalDerivative,insertFavourite,computeAbs} from "./Screens/AllLogics";
 import { computeArg,computecongj,compute_abi,computePolar,parseComplex,computeRectangular,convertDMS,polarToRectangularangle, } from "./Screens/ComplexModeLogics";
 
 
@@ -30,6 +30,7 @@ function Main({navigation,ActualMode,setActualMode,route}){
   const [lastresult,setLastResult]=useState(null);
   //let hypitems= route?.params?.hypvalues??null;
   const [hypitems, sethypitems] = useState(route?.params?.hypvalues??null);
+  const [fvrtitems, setfvrtitems] = useState(route?.params?.showexpr??null);
   //let eqvalues=route?.params?.equation??null;
   const [eqvalues, seteqvalues] = useState(route?.params?.equation??null);
   const [eqvaluesresult, seteqvaluesresult] = useState(route?.params?.result??null);
@@ -600,6 +601,16 @@ const handleDecimalClick = () => {
 
 //handle hyperbolic values
 const ShowHyp=()=>{
+
+  if(fvrtitems!==null&&shift==false){
+  const currentPos = cursorPosition !== null ? cursorPosition : expressionInput.length;
+    const newExpression = expressionInput.substring(0, currentPos) + fvrtitems + 
+                         expressionInput.substring(currentPos);
+  setExpressionInput(newExpression);
+   setFirstPlaceholderPosition(currentPos + 6);
+  setCursorPosition(currentPos + 8);  
+  setfvrtitems(null)
+}
 if(hypitems!==null&&shift==false){
   const currentPos = cursorPosition !== null ? cursorPosition : expressionInput.length;
     const newExpression = expressionInput.substring(0, currentPos) + hypitems + 
@@ -1139,6 +1150,10 @@ const handlearrows = (direction) => {
 
   setCursorPosition(newPos);
 };
+
+const addfvrt=(expr)=>{
+insertFavourite(expr)
+}
 return (
 
 <SafeAreaView style={ss.mainView}>
@@ -1177,6 +1192,11 @@ return (
           <TouchableOpacity style={ss.modebtn} onPress={DRGHandling}>
             <Text style={ss.modetxt}>{DRG}</Text>
           </TouchableOpacity>
+          
+          <TouchableOpacity style={ss.modebtn} onPress={()=>{addfvrt(expressionInput)}}>
+            <Text style={{marginTop:2,color:'white'}}>fvrt</Text> 
+          </TouchableOpacity>
+        
 
           <TouchableOpacity style={ss.modebtn}>
             <Text style={{color:'white',fontSize:12,marginTop:2}}>{ActualMode}</Text> 
@@ -1191,6 +1211,7 @@ return (
             <Text style={{marginTop:2}}>GRAPH</Text> 
           </TouchableOpacity>
         </View>
+        
       </View>
 
       {/* row 1 */}  
@@ -1771,7 +1792,7 @@ const ss = StyleSheet.create({
     borderRadius: 10,
     marginTop: 40,
     alignItems: 'center',
-    marginLeft: 70
+    marginLeft: 20
   },
   row1btn: {
     flexDirection: 'row',

@@ -16,6 +16,7 @@ import VectorCalculator from './Screens/SimpleMode/Vector';
 import HistoryScreen from './Screens/History';
 import Graph from './Screens/Graph';
 import Graph2 from './Screens/Graph2';
+import FavouritesScreen from './Screens/Fvrt';
 
 const Stack= createStackNavigator();
 
@@ -270,6 +271,24 @@ return(
             options={{
               headerShown: true,
               headerTitle: 'Graph',
+              headerStyle: { 
+                backgroundColor: '#434547',  
+              },
+              headerTitleStyle: { 
+                marginLeft: 100, 
+                color: 'white', 
+                fontWeight: 'bold' 
+              },
+              headerTintColor: 'white',
+            }} 
+          />
+
+          <Stack.Screen 
+            name="FavouritesScreen" 
+            component={FavouritesScreen}
+            options={{
+              headerShown: true,
+              headerTitle: 'Favourite List',
               headerStyle: { 
                 backgroundColor: '#434547',  
               },

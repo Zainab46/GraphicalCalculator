@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, FlatList, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { fetchRecords, deleteRecordById, deleteAllRecords } from './AllLogics'; // Adjust path if needed
 
-export default function HistoryScreen() {
+export default function HistoryScreen({navigation}) {
   const [records, setRecords] = useState([]);
 
   const loadRecords = async () => {
@@ -65,6 +65,10 @@ const formatTimestamp = (timestamp) => {
   return `${monthName} ${String(day).padStart(2, '0')}, ${year}, ${hour}:${String(minute).padStart(2, '0')} ${ampm}`;
 };
 
+const handlefvrt=()=>{
+  navigation.navigate('FavouritesScreen')
+}
+
 
   const renderItem = ({ item }) => (
   <View style={styles.itemContainer}>
@@ -96,6 +100,10 @@ const formatTimestamp = (timestamp) => {
     <View style={styles.container}>
       <TouchableOpacity style={styles.clearAllButton} onPress={handleDeleteAll}>
         <Text style={styles.clearAllText}>🧹 Clear All</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.clearAllButton} onPress={handlefvrt}>
+        <Text style={styles.clearAllText}>Go to fvourite List</Text>
       </TouchableOpacity>
 
       <FlatList
