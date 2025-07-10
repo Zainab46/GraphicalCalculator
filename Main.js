@@ -4,8 +4,8 @@ import { factorial , PI,E,abs,sqrt, div_mul, divide, cbrt, square, cube, x_yrt,
   makeNegative, computeLog10, computeLn,computeLogBase, 
   computeSummation,taylorSin,taylorTan,taylorCos,taylorAsin,taylorAcos,taylorAtan,
 taylorSinh,taylorCosh,taylorTanh,taylorAsinh,taylorAcosh,taylorAtanh,initDB,insertRecord,computeIntegration,computeDerivative,
-Rand,advancedIntegration,symbolicDerivative,tenPower,RanSharp,RanInt,config,getCalculatedValue,performOperation,numericalIntegration,numericalDerivative} from "./Screens/AllLogics";
-import { computeArg,computecongj,compute_abi,computePolar,parseComplex,computeRectangular,polarToRectangularangle,convertDMS } from "./Screens/ComplexModeLogics";
+Rand,advancedIntegration,symbolicDerivative,tenPower,RanSharp,RanInt,config,getCalculatedValue,performOperation} from "./Screens/AllLogics";
+import { computeArg,computecongj,compute_abi,computePolar,parseComplex,computeRectangular } from "./Screens/ComplexModeLogics";
 
 
 
@@ -426,7 +426,7 @@ const HandleVariables=(variable)=>{
     setCursorPosition(currentPos + 1);
    }
     else if(  shift===true&& variable==='c' && alpha===false){
-      setExpressionInput(expressionInput.substring(0, currentPos) + '|□|' + expressionInput.substring(currentPos));
+      setExpressionInput(expressionInput.substring(0, currentPos) + ' |□|' + expressionInput.substring(currentPos));
     setCursorPosition(currentPos + 1);
    }
    else if( shift===false&& variable==='c' && alpha===true){
@@ -854,6 +854,9 @@ const evaluateExpression = (expr) => {
       expr = expr.replace(/taylorAsin\(([^)]+)\)/g, `convertRadiansToAngle(taylorAsin($1), '${DRG}')`);
       expr = expr.replace(/taylorAcos\(([^)]+)\)/g, `convertRadiansToAngle(taylorAcos($1), '${DRG}')`);
       expr = expr.replace(/taylorAtan\(([^)]+)\)/g, `convertRadiansToAngle(taylorAtan($1), '${DRG}')`);
+      expr = expr.replace(/abs\|([+-]?\d+(\.\d+)?)\|/g, (_, val) => computeAbs(val));
+
+
     }
 
     // Original trig function replacements
@@ -869,6 +872,7 @@ const evaluateExpression = (expr) => {
     expr = expr.replace(/sinh⁻¹\(/g, 'taylorAsinh(');
     expr = expr.replace(/cosh⁻¹\(/g, 'taylorAcosh(');
     expr = expr.replace(/tanh⁻¹\(/g, 'taylorAtanh(');
+
   }
 
   console.log(`Final expression before evaluation: ${expr}`);
@@ -878,7 +882,7 @@ const evaluateExpression = (expr) => {
       'PI', 'E', 'factorial', 'abs', 'sqrt', 'divide', 'div_mul', 'cbrt', 'square', 'cube', 'x_yrt', 'makeNegative',
       'computeLog10', 'computeLn', 'computeLogBase', 'computeIntegration', 'computeDerivative', 'computeSummation',
       'taylorSin', 'taylorCos', 'taylorTan', 'taylorAsin', 'taylorAcos', 'taylorAtan', 'taylorSinh', 'taylorCosh', 'taylorTanh',
-      'taylorAsinh', 'taylorAcosh', 'taylorAtanh', 'computeArg', 'computecongj', 'compute_abi', 'computeRectangular',
+      'taylorAsinh', 'taylorAcosh', 'taylorAtanh', 'computeArg', 'computecongj', 'compute_abi', 'computeRectangular','computeAbs',
       `return ${expr};`
     );
 
@@ -886,7 +890,7 @@ const evaluateExpression = (expr) => {
       PI, E, factorial, abs, sqrt, divide, div_mul, cbrt, square, cube, x_yrt, makeNegative,
       computeLog10, computeLn, computeLogBase, computeIntegration, computeDerivative, computeSummation,
       taylorSin, taylorCos, taylorTan, taylorAsin, taylorAcos, taylorAtan, taylorSinh, taylorCosh, taylorTanh,
-      taylorAsinh, taylorAcosh, taylorAtanh, computeArg, computecongj, compute_abi, computeRectangular
+      taylorAsinh, taylorAcosh, taylorAtanh, computeArg, computecongj, compute_abi, computeRectangular,computeAbs
     );
 
     console.log(`Evaluation result: ${result}`);
