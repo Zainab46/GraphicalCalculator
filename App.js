@@ -15,6 +15,7 @@ import ShiftTwo from './Screens/ShiftTwo';
 import VectorCalculator from './Screens/SimpleMode/Vector';
 import HistoryScreen from './Screens/History';
 import Graph from './Screens/Graph';
+import Graph2 from './Screens/Graph2';
 
 const Stack= createStackNavigator();
 
@@ -248,6 +249,24 @@ return(
           <Stack.Screen 
             name="Graph" 
             component={Graph}
+            options={{
+              headerShown: true,
+              headerTitle: 'Graph',
+              headerStyle: { 
+                backgroundColor: '#434547',  
+              },
+              headerTitleStyle: { 
+                marginLeft: 100, 
+                color: 'white', 
+                fontWeight: 'bold' 
+              },
+              headerTintColor: 'white',
+            }} 
+          />
+
+          <Stack.Screen 
+            name="Graph2" 
+            component={Graph2}
             options={{
               headerShown: true,
               headerTitle: 'Graph',

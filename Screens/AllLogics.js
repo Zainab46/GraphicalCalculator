@@ -18,7 +18,9 @@ export const config = {
   D:'0',
   E:'0',
   F:'0',
+  graph:[]
 };
+
 
 // Helper function to convert input to radians based on current mode
 const inputToRadians = (input) => {
@@ -1272,21 +1274,19 @@ export {
 };
 
 /**
- * Performs mathematical operations on config variables A, B, C, D, E, F
- * @param {string} operation - Operation string (e.g., "A=20", "AX20", "A+B", "A-10")
- * @returns {string|number} - Result of the operation or updated variable value
+ * Performs mathematical operations on config variables A–F
+ * Supports operations like A=5, A+2, A²+2, B³-C, etc.
+ * @param {string} operation - Operation string
+ * @returns {string|number}
  */
 export function performOperation(operation) {
-  // Remove spaces and convert to uppercase
+  // Clean the input
   const cleanOp = operation.replace(/\s+/g, '').toUpperCase();
-  
-  // Valid variables
   const validVars = ['A', 'B', 'C', 'D', 'E', 'F'];
-  
-  // Assignment operation (=)
+
+  // Handle assignments like A=5
   if (cleanOp.includes('=')) {
     const [variable, value] = cleanOp.split('=');
-    
     if (validVars.includes(variable)) {
       const numValue = parseFloat(value);
       if (!isNaN(numValue)) {
@@ -1299,86 +1299,90 @@ export function performOperation(operation) {
       throw new Error(`Invalid variable: ${variable}`);
     }
   }
-  
-  // Parse operation with operators
+
+  // Handle direct operations like A+2 or A*B
   const operatorRegex = /([ABCDEF])([\+\-\*\/X])(\d+(?:\.\d+)?|[ABCDEF])/;
   const match = cleanOp.match(operatorRegex);
-  
   if (match) {
     const [, variable, operator, operand] = match;
-    
-    // Get the current value of the variable
     const currentValue = parseFloat(config[variable]);
-    
-    // Get the operand value (either a number or another variable)
-    let operandValue;
-    if (validVars.includes(operand)) {
-      operandValue = parseFloat(config[operand]);
-    } else {
-      operandValue = parseFloat(operand);
-    }
-    
+    const operandValue = validVars.includes(operand)
+      ? parseFloat(config[operand])
+      : parseFloat(operand);
+
     if (isNaN(currentValue) || isNaN(operandValue)) {
       throw new Error('Invalid numeric values');
     }
-    
+
     let result;
     switch (operator) {
-      case '+':
-        result = currentValue + operandValue;
-        break;
-      case '-':
-        result = currentValue - operandValue;
-        break;
+      case '+': result = currentValue + operandValue; break;
+      case '-': result = currentValue - operandValue; break;
       case '*':
-      case 'X':
-        result = currentValue * operandValue;
-        break;
+      case 'X': result = currentValue * operandValue; break;
       case '/':
-        if (operandValue === 0) {
-          throw new Error('Division by zero');
-        }
+        if (operandValue === 0) throw new Error('Division by zero');
         result = currentValue / operandValue;
         break;
       default:
         throw new Error(`Invalid operator: ${operator}`);
     }
-    
-    // Update the variable with the result
+
     config[variable] = result.toString();
     return result;
   }
-  
-  // Complex expression evaluation (e.g., "A+B*C")
-  const complexExpressionRegex = /^[ABCDEF\+\-\*\/X\(\)\d\.\s]+$/;
+
+  // Handle full expression (supports superscripts like A², B³)
+  const complexExpressionRegex = /^[ABCDEF0-9\+\-\*\/X\(\)\.\²³⁴⁵⁶⁷⁸⁹]+$/;
   if (complexExpressionRegex.test(cleanOp)) {
     let expression = cleanOp;
-    
-    // Replace variables with their values
+
+    // Superscript map
+    const superscriptMap = {
+      '²': '2',
+      '³': '3',
+      '⁴': '4',
+      '⁵': '5',
+      '⁶': '6',
+      '⁷': '7',
+      '⁸': '8',
+      '⁹': '9'
+    };
+
+    // Replace e.g., B³ with Math.pow(B, 3)
     validVars.forEach(variable => {
-      const regex = new RegExp(variable, 'g');
+      for (const [sup, pow] of Object.entries(superscriptMap)) {
+        const regex = new RegExp(`${variable}${sup}`, 'g');
+        expression = expression.replace(regex, `Math.pow(${variable},${pow})`);
+      }
+    });
+
+    // Replace remaining variables with their values
+    validVars.forEach(variable => {
+      const regex = new RegExp(`\\b${variable}\\b`, 'g');
       expression = expression.replace(regex, config[variable]);
     });
-    
-    // Replace X with *
+
+    // Replace X with * (multiplication)
     expression = expression.replace(/X/g, '*');
-    
+
     try {
-      // Evaluate the expression safely
       const result = Function(`"use strict"; return (${expression})`)();
       return result;
-    } catch (error) {
+    } catch {
       throw new Error('Invalid expression');
     }
   }
-  
-  // Single variable retrieval
+
+  // Return value of single variable
   if (validVars.includes(cleanOp)) {
     return parseFloat(config[cleanOp]);
   }
-  
+
   throw new Error(`Invalid operation: ${operation}`);
 }
+
+
 export function numericalIntegration(integralString) {
   const isDegreeMode = true; // Set to false for radians
 

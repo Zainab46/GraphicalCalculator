@@ -771,6 +771,7 @@ const HandleClear=()=>{
   config.F=''
   config.expression=''
   setExpressionInput('');
+  config.graph=[]
   setResult('');
 }
 
@@ -1096,7 +1097,11 @@ else if (expressionInput.includes('d/dx')) {
 
 const handlegraph=()=>{
   const currentPos = cursorPosition !== null ? cursorPosition : expressionInput.length;
-  if (graphcount===0){
+  if (config.graph.length>0){
+    navigation.navigate('Graph2',{dataofgraphs:config.graph})
+  }
+
+  else if (graphcount===0){
     const newExpression = expressionInput.substring(0, currentPos) + 'fx=' +
                           expressionInput.substring(currentPos);
     setExpressionInput(newExpression);
@@ -1114,6 +1119,11 @@ const handlegraph=()=>{
     navigation.navigate('Graph',{grapequation:cleanedExpression})
   }
 
+}
+
+const appendinlistofgraph=()=>{
+  config.graph.push(expressionInput.toString())
+  console.log('graph wali list '+config.graph)
 }
 
 const handlearrows = (direction) => {
@@ -1241,7 +1251,7 @@ return (
 
         <View>
           <Text></Text>
-          <TouchableOpacity style={{alignItems:'center',marginLeft:10,backgroundColor:'#D9D9D9', borderRadius:10,height:25,width:50}}>
+          <TouchableOpacity style={{alignItems:'center',marginLeft:10,backgroundColor:'#D9D9D9', borderRadius:10,height:25,width:50}} onPress={()=>{appendinlistofgraph()}}>
             <Image source={require('./Assets/downArrow.png')} style={{height:15,width:15,marginTop:4}}></Image> 
           </TouchableOpacity>
         </View>
