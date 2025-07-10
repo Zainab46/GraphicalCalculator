@@ -4,8 +4,8 @@ import { factorial , PI,E,abs,sqrt, div_mul, divide, cbrt, square, cube, x_yrt,
   makeNegative, computeLog10, computeLn,computeLogBase, 
   computeSummation,taylorSin,taylorTan,taylorCos,taylorAsin,taylorAcos,taylorAtan,
 taylorSinh,taylorCosh,taylorTanh,taylorAsinh,taylorAcosh,taylorAtanh,initDB,insertRecord,computeIntegration,computeDerivative,
-Rand,advancedIntegration,symbolicDerivative,tenPower,RanSharp,RanInt,config,getCalculatedValue,performOperation} from "./Screens/AllLogics";
-import { computeArg,computecongj,compute_abi,computePolar,parseComplex,computeRectangular } from "./Screens/ComplexModeLogics";
+Rand,advancedIntegration,symbolicDerivative,tenPower,RanSharp,RanInt,config,getCalculatedValue,performOperation,numericalIntegration,numericalDerivative} from "./Screens/AllLogics";
+import { computeArg,computecongj,compute_abi,computePolar,parseComplex,computeRectangular,convertDMS,polarToRectangularangle, } from "./Screens/ComplexModeLogics";
 
 
 
