@@ -1127,7 +1127,7 @@ const handlegraph=()=>{
  console.log(cleanedExpression)
   setgraphcount(0)
 
-    navigation.navigate('Graph',{grapequation:cleanedExpression})
+    navigation.navigate('Graph',{grapequation:cleanedExpression,mode:DRG})
   }
 
 }
